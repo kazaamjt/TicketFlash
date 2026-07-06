@@ -1,0 +1,15 @@
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.vscode/
+*.egg-info/
+build/
+
+# Python virtual env
+venv
+
+# Environment files
+.env
+env_vars
+
+# Test files
