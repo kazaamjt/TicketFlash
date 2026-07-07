@@ -8,6 +8,7 @@ import click
 
 from . import __version__
 from .config import init_logging
+from .server import Server
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ def start() -> None:
     """
     init_logging()
     logger.info("Starting Backend.")
+    server = Server()
+    server.start()
 
 
 if __name__ == "__main__":
