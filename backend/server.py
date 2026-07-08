@@ -8,7 +8,7 @@ from ipaddress import IPv4Address
 
 from aiohttp import web
 
-from . import config
+from . import config, is_prod
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,17 @@ class Server:
         """
         app = web.Application()
         app.add_routes(ROUTES)
-        logger.info(
-            f"Starting server on {self.http_settings.bind_ip}:{self.http_settings.port}"
-        )
-        web.run_app(
-            app, host=str(self.http_settings.bind_ip), port=self.http_settings.port
-        )
+        logger.info("Starting server.")
+        if is_prod:
+            web.run_app(
+                app,
+                host=str(self.http_settings.bind_ip),
+                port=self.http_settings.port,
+                print=None,
+            )
+        else:
+            web.run_app(
+                app,
+                host=str(self.http_settings.bind_ip),
+                port=self.http_settings.port,
+            )

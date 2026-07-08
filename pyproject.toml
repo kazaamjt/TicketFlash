@@ -50,6 +50,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = {attr = "backend.__version__"}
 
+[tool.black]
+target-version = ["py314"]
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3
