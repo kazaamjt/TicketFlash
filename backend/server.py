@@ -8,7 +8,8 @@ from ipaddress import IPv4Address
 
 from aiohttp import web
 
-from . import config, is_prod
+from . import PRODUCTION, config
+from .internals.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,13 @@ class Server:
 
     def __init__(self) -> None:
         self.http_settings = HTTPSettings()
+        self.db = Database()
+
+    async def _on_startup(self, _: web.Application) -> None:
+        await self.db.connect()
+
+    async def _on_cleanup(self, _: web.Application) -> None:
+        await self.db.disconnect()
 
     def start(self) -> None:
         """
@@ -42,8 +50,11 @@ class Server:
         """
         app = web.Application()
         app.add_routes(ROUTES)
+        app.on_startup.append(self._on_startup)
+        app.on_cleanup.append(self._on_cleanup)
         logger.info("Starting server.")
-        if is_prod:
+        if PRODUCTION:
+            logger.info("Running in production mode.")
             web.run_app(
                 app,
                 host=str(self.http_settings.bind_ip),
@@ -51,6 +62,7 @@ class Server:
                 print=None,
             )
         else:
+            logger.info("Running in DEV mode.")
             web.run_app(
                 app,
                 host=str(self.http_settings.bind_ip),

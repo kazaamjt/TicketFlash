@@ -29,6 +29,7 @@ kk-server = "backend.__main__:main"
 
 [project.optional-dependencies]
 dev = [
+    "asyncpg-stubs==0.31.3",
     "bandit==1.9.4",
     "black==26.5.1",
     "flake8==7.3.0",

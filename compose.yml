@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:18.4
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${KK_PG_USER}
+      POSTGRES_PASSWORD: ${KK_PG_PASS}
+      POSTGRES_DB: ${KK_PG_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@kk.com
+      PGADMIN_DEFAULT_PASSWORD: ${KK_PG_PASS}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  postgres-data:
+  pgadmin-data:
