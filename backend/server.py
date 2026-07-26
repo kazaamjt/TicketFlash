@@ -9,7 +9,7 @@ from ipaddress import IPv4Address
 from aiohttp import web
 
 from . import PRODUCTION, config
-from .internals.database import Database
+from .database import Database
 
 logger = logging.getLogger(__name__)
 

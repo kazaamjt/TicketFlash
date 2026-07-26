@@ -7,7 +7,7 @@ import logging
 import asyncpg
 from asyncpg import Connection, Record
 
-from .. import config
+from . import config
 
 logger = logging.getLogger(__name__)
 
