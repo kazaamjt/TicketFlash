@@ -6,9 +6,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${KK_PG_USER}
-      POSTGRES_PASSWORD: ${KK_PG_PASS}
-      POSTGRES_DB: ${KK_PG_DB}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${TF_PG_ADMIN_PASS}
     volumes:
       - postgres-data:/var/lib/postgresql
   pgadmin:
@@ -18,8 +17,8 @@ services:
     ports:
       - "8888:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@kk.com
-      PGADMIN_DEFAULT_PASSWORD: ${KK_PG_PASS}
+      PGADMIN_DEFAULT_EMAIL: admin@local.dev
+      PGADMIN_DEFAULT_PASSWORD: ${TF_PG_ADMIN_PASS}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
 

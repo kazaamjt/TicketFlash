@@ -7,13 +7,18 @@
 """
 Pytest fixtures live in thise file
 """
+
 import os
 import random
 import string
 from copy import deepcopy
-from typing import Iterable
+from typing import AsyncIterator, Iterable
 
 import pytest
+import pytest_asyncio
+
+from backend import config
+from backend.database import Database
 
 
 @pytest.fixture
@@ -29,4 +34,27 @@ def tmp_env() -> Iterable[os._Environ[str]]:
 
 @pytest.fixture
 def random_string() -> str:
+    return _random_string()
+
+
+def _random_string() -> str:
     return "".join(random.choice(string.printable) for _ in range(20))
+
+
+def get_pass(attempt: int = 0) -> str:
+    return config.get("pg", "admin_pass")
+
+
+@pytest_asyncio.fixture
+async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
+    test_id = _random_string()
+    tmp_env["TF_PG_HOST"] = "127.0.0.1"
+    tmp_env["TF_PG_USER"] = f"test_user_{test_id}"
+    tmp_env["TF_PG_PASS"] = test_id
+    tmp_env["TF_PG_DATABASE"] = f"test_{test_id}"
+    old_get_pass = config.get_pass
+    config.get_pass = get_pass
+    database = Database()
+    await database.init(None, None)
+    config.get_pass = old_get_pass
+    yield database

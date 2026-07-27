@@ -2,17 +2,22 @@
 Manages logging and configuration.
 Only reads ENV variables.
 Env variables are ALL CAPS and structured as followes:
-KK_{SECTION}_{OPTION}
+TF_{SECTION}_{OPTION}
 """
 
 import logging
 import os
+from getpass import getpass
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from .error import BaseError
 
-class ConfigError(Exception):
+IGNORE_MISSING_DEFAULTS = False
+
+
+class ConfigError(BaseError):
     """A configuration error of some kind."""
 
 
@@ -24,10 +29,14 @@ class BadOptionValue(ConfigError):
     """A setting was given a bad value."""
 
 
-def _get_from_env(section: str, option: str) -> str | None:
+def _get_env_var_name(section: str, option: str) -> str:
     section = section.replace("-", "_").replace(".", "_")
     option = option.replace("-", "_")
-    env_var = f"KK_{section.upper()}_{option.upper()}"
+    return f"TF_{section.upper()}_{option.upper()}"
+
+
+def _get_from_env(section: str, option: str) -> str | None:
+    env_var = _get_env_var_name(section, option)
     return os.environ.get(env_var)
 
 
@@ -41,7 +50,12 @@ def get(section: str, option: str, default: str | None = None) -> str:
         return env_var_value
 
     if default is None:
-        raise RequiredOption(f"Option {option} in section {section} requries a value.")
+        if IGNORE_MISSING_DEFAULTS:
+            return ""
+
+        raise RequiredOption(
+            f"Option '{_get_env_var_name(section, option)}' requries a value."
+        )
 
     return default
 
@@ -61,7 +75,7 @@ def get_int(section: str, option: str, default: int | None = None) -> int:
         return int(value)
     except ValueError as e:
         raise BadOptionValue(
-            f"Option {option} in section {section} is not an integer. "
+            f"Option '{_get_env_var_name(section, option)}' is not an integer. "
             f'(Current value:"{value}")'
         ) from e
 
@@ -102,7 +116,7 @@ def get_bool(section: str, option: str, default: bool | None = None) -> bool:
         return boolean_value
 
     raise BadOptionValue(
-        f"Option {option} in section {section} is not an accepted boolean value. "
+        f"Option '{_get_env_var_name(section, option)}' is not an accepted boolean value. "
         f'(Current value:"{value}")'
     )
 
@@ -132,12 +146,12 @@ def get_ip(
             value = ip_address(str_value)
         except ValueError as e:
             raise BadOptionValue(
-                f"Option {option} in section {section} is not a valid IP address."
+                f"Option '{_get_env_var_name(section, option)}' is not a valid IP address."
             ) from e
 
         if family is not None and not isinstance(value, family):
             raise BadOptionValue(
-                f"Option {option} in section {section} is not the right ipaddres family."
+                f"Option '{_get_env_var_name(section, option)}' is not the right ipaddres family."
             )
 
         return value
@@ -164,7 +178,7 @@ def get_multichoice(
         return value
 
     raise BadOptionValue(
-        f"Option '{option}' in section '{section}' has a bad value. "
+        f"Option '{_get_env_var_name(section, option)}' has a bad value. "
         f"Possible values: [{','.join(choices)}]"
     )
 
@@ -189,13 +203,13 @@ def get_path(
     value = Path(get(section, option, str_default))
     if absolute and not value.absolute():
         raise BadOptionValue(
-            f"Option '{option}' in section '{section}' expects an absolute path. "
+            f"Option '{_get_env_var_name(section, option)}' expects an absolute path. "
             f"(Current value: '{value}')"
         )
 
     if must_exist and not value.exists():
         raise BadOptionValue(
-            f"Option '{option}' in section '{section}' doesn't exist. "
+            f"Option '{_get_env_var_name(section, option)}' doesn't exist. "
             f"(Current value: '{value}')"
         )
 
@@ -220,7 +234,7 @@ def init_logging() -> None:
     Initialises the logging subsystem.
     Uses standard python logging.
     """
-    section = "logging"
+    section = "log"
     logger_format = get_multichoice(section, "format", ["json", "raw"], "raw")
     out = get_multichoice(section, "out", ["stdout", "file"], "stdout")
     level = getattr(
@@ -229,7 +243,7 @@ def init_logging() -> None:
             section, "level", ["ERROR", "WARNING", "INFO", "DEBUG"], "INFO"
         ),
     )
-    logging_dir = get_path(section, "path", Path("/var/log/kk-backend"))
+    logging_dir = get_path(section, "path", Path("/var/log/tf-api"))
 
     if logger_format == "json":
         log_format = '{"time": %(asctime)s, "name": %(name)s, "level": %(levelname)s, "message" %(message)s}'
@@ -252,3 +266,31 @@ def init_logging() -> None:
     if get_bool("http", "log_access", False):
         logging_dir.mkdir(parents=True, exist_ok=True)
         _init_access_logger(logging_dir)
+
+
+def get_input(prompt: str, default: str) -> str:
+    """
+    Wrapper around input() that returns a default if the answer was empty.
+    Will add the default to the prompt and add a colon.
+    """
+    response = input(prompt + f"[{default}]: ")
+    if response == "":
+        return default
+    return response
+
+
+def get_pass(attempt: int = 0) -> str:
+    """
+    Gets and confirms a password before returning it.
+    """
+    pass_1 = getpass()
+    pass_2 = getpass("Confirm Password: ")
+
+    if pass_1 == pass_2:
+        return pass_1
+
+    if attempt < 3:
+        print("\nPasswords didn't match, please try again.")
+        return get_pass(attempt + 1)
+
+    raise BaseError("Failed to confirm password too many times.")
