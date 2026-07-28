@@ -10,7 +10,6 @@ Pytest fixtures live in thise file
 
 import os
 import random
-import string
 from copy import deepcopy
 from typing import AsyncIterator, Iterable
 
@@ -38,7 +37,7 @@ def random_string() -> str:
 
 
 def _random_string() -> str:
-    return "".join(random.choice(string.printable) for _ in range(20))
+    return "".join(random.choice("0123456789ABCDEF") for _ in range(20))
 
 
 def get_pass(attempt: int = 0) -> str:
@@ -55,7 +54,7 @@ async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
     tmp_env["TF_PG_HOST"] = "127.0.0.1"
     tmp_env["TF_PG_USER"] = f"test_user_{test_id}"
     tmp_env["TF_PG_PASS"] = test_id
-    tmp_env["TF_PG_DATABASE"] = f"test_{test_id}"
+    tmp_env["TF_PG_DB_NAME"] = f"test_{test_id}"
     old_get_pass = config.get_pass
     config.get_pass = get_pass
     old_get_input = config.get_input
@@ -64,4 +63,14 @@ async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
     await database.init(None, None)
     config.get_pass = old_get_pass
     config.get_input = old_get_input
+    await database.connect()
     yield database
+    await database.disconnect()
+    config.get_pass = get_pass
+    database.settings.user = "postgres"
+    database.settings.password = config.get_pass()
+    database.settings.db_name = "postgres"
+    config.get_pass = old_get_pass
+    await database.connect()
+    await database._connection.execute(f'DROP DATABASE "test_{test_id}"')
+    await database.disconnect()

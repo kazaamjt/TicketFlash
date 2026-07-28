@@ -34,7 +34,7 @@ class DatabaseSettings:
         self.port = config.get_int(section, "port", 5432)
         self.user = config.get(section, "user")
         self.password = config.get(section, "pass")
-        self.database = config.get(section, "database")
+        self.db_name = config.get(section, "db_name")
 
 
 class Database:
@@ -56,7 +56,7 @@ class Database:
                     host=self.settings.host,
                     user=self.settings.user,
                     password=self.settings.password,
-                    database=self.settings.database,
+                    database=self.settings.db_name,
                 )
             except asyncpg.exceptions.InvalidCatalogNameError as e:
                 raise DBError(
@@ -115,10 +115,10 @@ class Database:
         )
         prev_username = self.settings.user
         password = self.settings.password
-        prev_database = self.settings.database
+        prev_database = self.settings.db_name
         self.settings.user = config.get_input("Postgres superuser", "postgres")
         self.settings.password = config.get_pass()
-        self.settings.database = config.get_input("Default database", "postgres")
+        self.settings.db_name = config.get_input("Default database", "postgres")
         await self.connect()
         try:
             if username is None:
@@ -152,7 +152,7 @@ class Database:
         print("Populating new database.")
         self.settings.user = username
         self.settings.password = password
-        self.settings.database = database
+        self.settings.db_name = database
 
         await self.connect()
         logger.debug(f"Schema version: {SCHEMA_VERSION}")

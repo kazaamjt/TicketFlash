@@ -10,4 +10,8 @@ from backend.database import Database
 
 @pytest.mark.asyncio
 async def test_init(tmp_database: Database) -> None:
-    pass
+    """
+    This function is empty on purpose.
+    It mostly tests the init script and the tmp_database fixture.
+    If it fails, most likely the other tests will also fail.
+    """
