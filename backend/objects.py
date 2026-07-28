@@ -4,29 +4,34 @@ allow for using, updating and storing the, in the database
 as well as retrieving them and representing them to the user.
 """
 
-from dataclasses import dataclass
+from datetime import datetime
 
-from .database import Database
+from pydantic import BaseModel
+
+from .object_def_table import register
 
 
-@dataclass
-class ApiObject:
+class ApiObject(BaseModel):
     """
     Base class from which all Api objects should inherit.
     """
 
     @classmethod
-    async def init(cls, db: Database) -> None:
-        raise NotImplementedError
+    def export_schema(cls) -> None:
+        pass
 
 
-@dataclass
+@register
 class User(ApiObject):
+    """
+    Represents a simple user.
+    """
 
-    user_id: str
+    uuid: str
     first_name: str
     last_name: str
     address: str
     postal_code: int
     telephone: str
     email: str
+    created_at: datetime
