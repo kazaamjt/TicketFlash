@@ -45,6 +45,10 @@ def get_pass(attempt: int = 0) -> str:
     return config.get("pg", "admin_pass")
 
 
+def get_input(prompt: str, default: str) -> str:
+    return default
+
+
 @pytest_asyncio.fixture
 async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
     test_id = _random_string()
@@ -54,7 +58,10 @@ async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
     tmp_env["TF_PG_DATABASE"] = f"test_{test_id}"
     old_get_pass = config.get_pass
     config.get_pass = get_pass
+    old_get_input = config.get_input
+    config.get_input = get_input
     database = Database()
     await database.init(None, None)
     config.get_pass = old_get_pass
+    config.get_input = old_get_input
     yield database
