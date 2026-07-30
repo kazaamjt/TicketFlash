@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from . import config
 from .error import BaseError
+from .objects import ApiObject
 
 logger = logging.getLogger(__name__)
 

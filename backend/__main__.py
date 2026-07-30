@@ -3,16 +3,20 @@ Kultur Klash website backend
 """
 
 import asyncio
+import json
 import logging
 import sys
+from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec
 
 import click
 
 from . import __version__, config
-from .database import Database
+from .database import SCHEMA_VERSION, Database
 from .error import BaseError
+from .object_def_table import DEF_TABLE
 from .server import Server
+from .types import JsonSchema
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +42,7 @@ def _cmd_wrapper(
     try:
         function(*args, **kwargs)
     except BaseError as e:
-        print("===", e, "===")
+        print("=== ERROR:", e, "===")
         sys.exit(1)
 
 
@@ -52,7 +56,7 @@ async def _async_cmd_wrapper(
     try:
         await function(*args, **kwargs)
     except BaseError as e:
-        print("===", e, "===")
+        print("=== ERROR:", e, "===")
         sys.exit(1)
 
 
@@ -89,6 +93,37 @@ async def _init_db(username: str | None, db_name: str | None) -> None:
     config.IGNORE_MISSING_DEFAULTS = True
     db = Database()
     await db.init(username, db_name)
+
+
+@main.group()
+def dev() -> None:
+    """Developer commands. Should not be touched by third parties."""
+
+
+@dev.command
+def export_schema() -> None:
+    """
+    Export a new schema version
+    """
+    _cmd_wrapper(_export_schema)
+
+
+def _export_schema() -> None:
+    export_path = Path(__file__).resolve().parent / "schema"
+    if not export_path.exists():
+        export_path.mkdir()
+
+    schema_export_path = export_path / str(SCHEMA_VERSION)
+    if schema_export_path.exists():
+        raise BaseError("Schema directory already exists")
+
+    schema_export_path.mkdir()
+    export_dict: dict[str, JsonSchema] = {}
+    for name, cls in DEF_TABLE.api_classes.items():
+        export_dict[name] = cls.model_json_schema()
+
+    schema_file = schema_export_path / "schema.json"
+    schema_file.write_text(json.dumps(export_dict, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

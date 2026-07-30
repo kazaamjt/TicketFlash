@@ -28,10 +28,17 @@ class User(ApiObject):
     """
 
     uuid: str
+    email: str
+
+
+@register
+class UserMetadata(ApiObject):
+    """Aditional data of the user."""
+
+    uuid: str
+    created_at: datetime
     first_name: str
     last_name: str
     address: str
     postal_code: int
     telephone: str
-    email: str
-    created_at: datetime
