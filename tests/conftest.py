@@ -16,8 +16,8 @@ from typing import AsyncIterator, Iterable
 import pytest
 import pytest_asyncio
 
-from backend import config
-from backend.database import Database
+from ticket_flash import config
+from ticket_flash.backend.database import Database
 
 
 @pytest.fixture

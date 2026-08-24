@@ -12,9 +12,9 @@ from typing import Awaitable, Callable, ParamSpec
 import click
 
 from . import __version__, config
-from .database import SCHEMA_VERSION, Database
+from .backend.database import SCHEMA_VERSION, Database
 from .error import BaseError
-from .object_def_table import DEF_TABLE
+from .internals.object_def_table import DEF_TABLE
 from .server import Server
 from .types import JsonSchema
 
@@ -109,15 +109,15 @@ def export_schema() -> None:
 
 
 def _export_schema() -> None:
-    export_path = Path(__file__).resolve().parent / "schema"
+    export_path = Path(__file__).resolve().parent.parent / "schema"
     if not export_path.exists():
         export_path.mkdir()
 
     schema_export_path = export_path / str(SCHEMA_VERSION)
     if schema_export_path.exists():
-        raise BaseError("Schema directory already exists")
-
+        raise BaseError(f"Schema directory v{SCHEMA_VERSION} already exists")
     schema_export_path.mkdir()
+
     export_dict: dict[str, JsonSchema] = {}
     for name, cls in DEF_TABLE.api_classes.items():
         export_dict[name] = cls.model_json_schema()

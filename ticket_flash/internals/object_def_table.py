@@ -6,11 +6,11 @@ import logging
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from .objects import ApiObject
+    from .objects import BackendObject
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", bound="ApiObject")
+T = TypeVar("T", bound="BackendObject")
 
 
 class ObjectDefTable:
@@ -20,9 +20,9 @@ class ObjectDefTable:
     """
 
     def __init__(self) -> None:
-        self.api_classes: dict[str, "type[ApiObject]"] = {}
+        self.api_classes: dict[str, "type[BackendObject]"] = {}
 
-    def register(self, cls: type["ApiObject"]) -> None:
+    def register(self, cls: type["BackendObject"]) -> None:
         """
         Register a subclass of ApiObject to the system.
         """

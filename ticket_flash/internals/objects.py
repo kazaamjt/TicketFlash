@@ -1,17 +1,16 @@
 """
 These classes represent our objects internally and
-allow for using, updating and storing the, in the database
-as well as retrieving them and representing them to the user.
+allow for using, updating and storing said objects in the database
+as well as retrieving them and representing them to the frontend.
 """
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel
 
-from .object_def_table import register
 
-
-class ApiObject(BaseModel):
+class BackendObject(BaseModel):
     """
     Base class from which all Api objects should inherit.
     """
@@ -21,22 +20,20 @@ class ApiObject(BaseModel):
         pass
 
 
-@register
-class User(ApiObject):
+class User(BackendObject):
     """
     Represents a simple user.
     """
 
-    uuid: str
+    uuid: UUID
     email: str
-
-
-@register
-class UserMetadata(ApiObject):
-    """Aditional data of the user."""
-
-    uuid: str
     created_at: datetime
+
+
+class UserMetadata(BackendObject):
+    """Additional data of the user."""
+
+    uuid: UUID
     first_name: str
     last_name: str
     address: str

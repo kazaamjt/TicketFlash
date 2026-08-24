@@ -8,9 +8,8 @@ import asyncpg
 from asyncpg import Connection, Record
 from pydantic import BaseModel
 
-from . import config
-from .error import BaseError
-from .objects import ApiObject
+from .. import config
+from ..error import BaseError
 
 logger = logging.getLogger(__name__)
 

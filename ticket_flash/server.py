@@ -9,7 +9,8 @@ from ipaddress import IPv4Address
 from aiohttp import web
 
 from . import PRODUCTION, config
-from .database import Database
+from .api.endpoints import Endpoint, get_endpoints
+from .backend.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,6 @@ class HTTPSettings:
             raise config.BadOptionValue("Port should be between 0 and 65535.")
 
 
-ROUTES = web.RouteTableDef()
-
-
 class Server:
     """
     The overarching system that manages the webserver and database
@@ -37,6 +35,7 @@ class Server:
     def __init__(self) -> None:
         self.http_settings = HTTPSettings()
         self.db = Database()
+        self.endpoints: list[Endpoint] = []
 
     async def _on_startup(self, _: web.Application) -> None:
         await self.db.connect()
@@ -44,12 +43,21 @@ class Server:
     async def _on_cleanup(self, _: web.Application) -> None:
         await self.db.disconnect()
 
+    def _get_routes(self) -> list[web.RouteDef]:
+        routes: list[web.RouteDef] = []
+        for cls in get_endpoints():
+            endpoint = cls()
+            self.endpoints.append(endpoint)
+            routes.extend(endpoint.register())
+
+        return routes
+
     def start(self) -> None:
         """
         Sets up and starts the server.
         """
         app = web.Application()
-        app.add_routes(ROUTES)
+        app.add_routes(self._get_routes())
         app.on_startup.append(self._on_startup)
         app.on_cleanup.append(self._on_cleanup)
         logger.info("Starting server.")

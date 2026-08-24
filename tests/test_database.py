@@ -5,7 +5,7 @@
 # pylint: disable=unused-argument
 import pytest
 
-from backend.database import Database
+from ticket_flash.backend.database import Database
 
 
 @pytest.mark.asyncio

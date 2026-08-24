@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from backend import config
+from ticket_flash import config
 
 
 def test_config(tmp_env: os._Environ[str]) -> None:
