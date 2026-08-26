@@ -52,19 +52,23 @@ class Server:
 
         return routes
 
-    def start(self) -> None:
-        """
-        Sets up and starts the server.
-        """
+    def _create_app(self) -> web.Application:
         app = web.Application()
         app.add_routes(self._get_routes())
         app.on_startup.append(self._on_startup)
         app.on_cleanup.append(self._on_cleanup)
+
+        return app
+
+    def start(self) -> None:
+        """
+        Sets up and starts the server.
+        """
         logger.info("Starting server.")
         if PRODUCTION:
             logger.info("Running in production mode.")
             web.run_app(
-                app,
+                self._create_app(),
                 host=str(self.http_settings.bind_ip),
                 port=self.http_settings.port,
                 print=None,
@@ -72,7 +76,7 @@ class Server:
         else:
             logger.info("Running in DEV mode.")
             web.run_app(
-                app,
+                self._create_app(),
                 host=str(self.http_settings.bind_ip),
                 port=self.http_settings.port,
             )
