@@ -4,4 +4,4 @@ and execution of the API.
 """
 
 VERSION = "v1"
-PATH_V1 = f"/path/{VERSION}"
+PATH_V1 = f"/{VERSION}"

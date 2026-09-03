@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from .object_def_table import register
+
 
 class BackendObject(BaseModel):
     """
@@ -25,17 +27,24 @@ class User(BackendObject):
     Represents a simple user.
     """
 
-    uuid: UUID
+    id: UUID
     email: str
     created_at: datetime
+
+
+register(User)
 
 
 class UserMetadata(BackendObject):
     """Additional data of the user."""
 
-    uuid: UUID
-    first_name: str
-    last_name: str
-    address: str
-    postal_code: int
-    telephone: str
+    id: UUID
+    first_name: str | None
+    last_name: str | None
+    address: str | None
+    postal_code: int | None
+    city: str | None
+    telephone: str | None
+
+
+register(UserMetadata)

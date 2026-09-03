@@ -12,12 +12,15 @@ import os
 import random
 from copy import deepcopy
 from typing import AsyncIterator, Iterable
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
+from aiohttp.test_utils import TestClient, TestServer
 
 from ticket_flash import config
 from ticket_flash.backend.database import Database
+from ticket_flash.server import Server
 
 
 @pytest.fixture
@@ -73,4 +76,26 @@ async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
     config.get_pass = old_get_pass
     await database.connect()
     await database._connection.execute(f'DROP DATABASE "test_{test_id}"')
+    await database._connection.execute(f'DROP USER "test_user_{test_id}"')
     await database.disconnect()
+
+
+@pytest.fixture
+def mock_db() -> Database:
+    db = Mock(spec=Database)
+    db.connect = AsyncMock()
+    db.disconnect = AsyncMock()
+    return db
+
+
+@pytest_asyncio.fixture
+async def http_client(mock_db: Database) -> AsyncIterator[TestClient]:
+    server = Server(mock_db)
+    app = server._create_app()
+    async with TestClient(TestServer(app)) as client:
+        yield client
+
+
+@pytest.fixture
+def random_phone_number() -> str:
+    return f"+1212555{random.randint(100, 199)}"

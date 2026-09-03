@@ -11,6 +11,7 @@ from aiohttp import web
 from . import PRODUCTION, config
 from .api.endpoints import Endpoint, get_endpoints
 from .backend.database import Database
+from .error import BaseError
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,9 @@ class Server:
     and makes them play nice.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, database: Database | None = None) -> None:
         self.http_settings = HTTPSettings()
-        self.db = Database()
+        self.db = database or Database()
         self.endpoints: list[Endpoint] = []
 
     async def _on_startup(self, _: web.Application) -> None:
@@ -46,7 +47,11 @@ class Server:
     def _get_routes(self) -> list[web.RouteDef]:
         routes: list[web.RouteDef] = []
         for cls in get_endpoints():
-            endpoint = cls()
+            endpoint = cls(self.db)
+            if endpoint.path == "":
+                raise BaseError(
+                    "Tried to register a route whose path class variable was not overwritten."
+                )
             self.endpoints.append(endpoint)
             routes.extend(endpoint.register())
 

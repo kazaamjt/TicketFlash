@@ -3,16 +3,47 @@ API endpoints.
 Need to be loaded by the server.
 """
 
-from aiohttp import web
+import json
+from typing import TypeVar
 
+from aiohttp import web
+from pydantic import ValidationError
+
+from ..backend.database import SCHEMA_VERSION, Database
 from . import PATH_V1, VERSION
+from .request_objects import HTTPRequestModel, UserCreateRequest
+
+T = TypeVar("T", bound=HTTPRequestModel)
+
+
+def validate_data(validation_class: type[T], data: dict) -> T | web.Response:
+    """
+    Validates data given an HTTPRequestModel Subclass.
+    Then returns a validatedobject OR a error response.
+    """
+    try:
+        validated_data = validation_class(**data)
+    except ValidationError as e:
+        return web.json_response(
+            {"error": "validation_error", "details": e.errors()}, status=422
+        )
+    except json.JSONDecodeError:
+        return web.json_response({"error": "json_decode_error"}, status=400)
+
+    return validated_data
 
 
 class Endpoint:
     """
     A base class for endpoints that shows what they should look like.
-    Mostly used as an interface in other parts of the code
+    Mostly used as an interface in other parts of the code.
+    It's path class variable should be overwritten.
     """
+
+    path = ""
+
+    def __init__(self, db: Database) -> None:
+        self.db = db
 
     def register(self) -> list[web.RouteDef]:
         """
@@ -40,17 +71,22 @@ class Health(Endpoint):
     Returns information on how various subsections of the application are doing.
     """
 
-    def __init__(self) -> None:
-        self.path = "/health"
+    path = "/health"
 
     async def get(self, _: web.Request) -> web.Response:
-        return web.json_response({"version": VERSION, "web": "ok"})
+        # TODO: implement database health check
+        return web.json_response(
+            {
+                "web": {"status": "ok", "version": VERSION},
+                "database": {"status": "ok", "schema version": SCHEMA_VERSION},
+            }
+        )
 
     def register(self) -> list[web.RouteDef]:
         return [web.get(self.path, self.get)]
 
 
-_endpoints.append(Health)
+register_endpoint(Health)
 
 
 class Users(Endpoint):
@@ -59,11 +95,30 @@ class Users(Endpoint):
     Not for authentication!
     """
 
-    def __init__(self) -> None:
-        self.path = PATH_V1 + "/users"
+    path = PATH_V1 + "/users"
 
     async def create(self, request: web.Request) -> web.Response:
-        pass
+        """
+        Creates a user
+        """
+        validated_request = validate_data(UserCreateRequest, await request.json())
+        if isinstance(validated_request, web.Response):
+            return validated_request
+
+        user, metadata = validated_request.create_user()
+
+        return web.json_response(
+            {
+                **user.model_dump(mode="json"),
+                "metadata": metadata.model_dump(
+                    mode="json", exclude={"id"}, exclude_none=True
+                ),
+            },
+            status=201,
+        )
 
     def register(self) -> list[web.RouteDef]:
         return [web.post(self.path, self.create)]
+
+
+register_endpoint(Users)
