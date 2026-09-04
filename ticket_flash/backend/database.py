@@ -2,11 +2,12 @@
 Interface for talking to the postgres db.
 """
 
+import asyncio
 import logging
+from dataclasses import dataclass
 
 import asyncpg
 from asyncpg import Connection, Record
-from pydantic import BaseModel
 
 from .. import config
 from ..error import BaseError
@@ -16,7 +17,8 @@ logger = logging.getLogger(__name__)
 SCHEMA_VERSION = 1
 
 
-class Schema(BaseModel):
+@dataclass
+class Schema:
     version: int
 
 
@@ -93,6 +95,20 @@ class Database:
             raise DBError(
                 f"Schema version mismatch! (Expected {SCHEMA_VERSION}, but got {schema.version})"
             )
+
+    async def status(self) -> str:
+        """
+        Gets the status of the database subsystem using a simple query.
+        """
+        try:
+            async with asyncio.timeout(1):
+                await self._connection.fetchval("SELECT 1")
+        except (asyncpg.PostgresError, TimeoutError, OSError) as e:
+            logger.error("Databse health check failed!")
+            logger.error(e)
+            return "error"
+
+        return "ok"
 
     async def disconnect(self) -> None:
         """Closes the connection, only if it was previously connected."""

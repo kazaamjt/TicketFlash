@@ -74,11 +74,15 @@ class Health(Endpoint):
     path = "/health"
 
     async def get(self, _: web.Request) -> web.Response:
-        # TODO: implement database health check
+        status_all = "ok"
+        db_status = await self.db.status()
+        if db_status != "ok":
+            status_all = "degraded"
         return web.json_response(
             {
+                "status all": status_all,
                 "web": {"status": "ok", "version": VERSION},
-                "database": {"status": "ok", "schema version": SCHEMA_VERSION},
+                "database": {"status": db_status, "schema version": SCHEMA_VERSION},
             }
         )
 

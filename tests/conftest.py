@@ -82,9 +82,13 @@ async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
 
 @pytest.fixture
 def mock_db() -> Database:
+    async def status() -> str:
+        return "ok"
+
     db = Mock(spec=Database)
     db.connect = AsyncMock()
     db.disconnect = AsyncMock()
+    db.status = status
     return db
 
 
