@@ -5,9 +5,9 @@ Interface for talking to the postgres db.
 import asyncio
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 import asyncpg
-from asyncpg import Connection, Record
 
 from .. import config
 from ..error import BaseError
@@ -23,7 +23,7 @@ class Schema:
 
 
 class DBError(BaseError):
-    """ "Something went wrong during a db operation."""
+    """Something went wrong during a db operation."""
 
 
 class DatabaseSettings:
@@ -37,6 +37,8 @@ class DatabaseSettings:
         self.user = config.get(section, "user")
         self.password = config.get(section, "pass")
         self.db_name = config.get(section, "db_name")
+        self.min_connections = config.get_int(section, "min_connections", 5)
+        self.max_connections = config.get_int(section, "max_connections", 20)
 
 
 class Database:
@@ -46,19 +48,21 @@ class Database:
 
     def __init__(self) -> None:
         self.settings = DatabaseSettings()
-        self._connection: Connection[Record]
         self._connected = False
+        self._pool: asyncpg.Pool[asyncpg.Record]
 
     async def connect(self) -> None:
         """Connect to PG."""
         if not self._connected:
             try:
                 logger.debug("Connectiong to database.")
-                self._connection = await asyncpg.connect(
+                self._pool = await asyncpg.create_pool(
                     host=self.settings.host,
                     user=self.settings.user,
                     password=self.settings.password,
                     database=self.settings.db_name,
+                    min_size=self.settings.min_connections,
+                    max_size=self.settings.max_connections,
                 )
             except asyncpg.exceptions.InvalidCatalogNameError as e:
                 raise DBError(
@@ -82,12 +86,24 @@ class Database:
             self._connected = True
             logger.info("Connected to database.")
 
+    async def disconnect(self) -> None:
+        """Closes the connection, only if it was previously connected."""
+        if self._connected:
+            logger.debug("Disconnecting from database.")
+            await self._pool.close()
+            self._connected = False
+            logger.debug("Disconnected from database.")
+
+    async def fetchval(self, query: str, *args: object) -> Any:
+        async with self._pool.acquire() as connection:
+            return await connection.fetchval(query, *args)
+
+    async def execute(self, query: str, *args: object) -> Any:
+        async with self._pool.acquire() as connection:
+            return await connection.execute(query, *args)
+
     async def _get_schema(self) -> Schema:
-        return Schema(
-            version=await self._connection.fetchval(
-                "SELECT version FROM schema_version"
-            )
-        )
+        return Schema(version=await self.fetchval("SELECT version FROM schema_version"))
 
     async def _verify_schema(self) -> None:
         schema = await self._get_schema()
@@ -96,27 +112,38 @@ class Database:
                 f"Schema version mismatch! (Expected {SCHEMA_VERSION}, but got {schema.version})"
             )
 
+    async def _health_check(self, timeout: float) -> bool:
+        """
+        Returns False on a TimeoutError.
+        """
+        try:
+            async with asyncio.timeout(timeout):
+                await self.fetchval("SELECT 1")
+            return True
+        except TimeoutError:
+            return False
+
     async def status(self) -> str:
         """
         Gets the status of the database subsystem using a simple query.
+
+        A normal response within 1 second is considered healthy.
+        If the first check times out, a second check with a more
+        generous timeout determines whether the database is merely
+        slow or actually unavailable.
         """
         try:
-            async with asyncio.timeout(1):
-                await self._connection.fetchval("SELECT 1")
-        except (asyncpg.PostgresError, TimeoutError, OSError) as e:
-            logger.error("Databse health check failed!")
-            logger.error(e)
-            return "error"
+            if await self._health_check(1):
+                return "ok"
 
-        return "ok"
+            if await self._health_check(5):
+                logger.warning("Database perfromance is degraded!")
+                return "performance degraded"
 
-    async def disconnect(self) -> None:
-        """Closes the connection, only if it was previously connected."""
-        if self._connected:
-            logger.debug("Disconnecting from database.")
-            await self._connection.close()
-            self._connected = False
-            logger.debug("Disconnected from database.")
+        except (asyncpg.PostgresError, OSError) as e:
+            logger.error("Database health check failed! %s", e)
+
+        return "error"
 
     async def init(self, username: str | None, database: str | None) -> None:
         """
@@ -147,7 +174,7 @@ class Database:
             if password == "":
                 password = config.get_pass()
 
-            await self._connection.execute(
+            await self.execute(
                 f"CREATE ROLE \"{username}\" LOGIN PASSWORD '{password}'"
             )
 
@@ -158,9 +185,7 @@ class Database:
                         "Application postgres database name", "TicketFlash"
                     )
             logger.info(f"Creating new postgres database '{database}'.")
-            await self._connection.execute(
-                f'CREATE DATABASE "{database}" OWNER "{username}"'
-            )
+            await self.execute(f'CREATE DATABASE "{database}" OWNER "{username}"')
 
         finally:
             await self.disconnect()
@@ -172,13 +197,13 @@ class Database:
 
         await self.connect()
         logger.debug(f"Schema version: {SCHEMA_VERSION}")
-        await self._connection.execute("""
+        await self.execute("""
             CREATE TABLE schema_version (
                 version INTEGER NOT NULL
             );
             """)
 
-        await self._connection.execute(f"""
+        await self.execute(f"""
             INSERT INTO schema_version (version)
             VALUES ({SCHEMA_VERSION});
             """)

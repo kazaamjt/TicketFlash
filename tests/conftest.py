@@ -51,18 +51,22 @@ def get_input(prompt: str, default: str) -> str:
     return default
 
 
-@pytest_asyncio.fixture
-async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
+@pytest_asyncio.fixture(scope="session")
+async def tmp_database() -> AsyncIterator[Database]:
+    """
+    When using this fixture, be sure to use add (loop_scope="session")
+    to whatever test uses it, because it will otherwise use a new, seperate loop.
+    """
     test_id = _random_string()
-    tmp_env["TF_PG_HOST"] = "127.0.0.1"
-    tmp_env["TF_PG_USER"] = f"test_user_{test_id}"
-    tmp_env["TF_PG_PASS"] = test_id
-    tmp_env["TF_PG_DB_NAME"] = f"test_{test_id}"
     old_get_pass = config.get_pass
     config.get_pass = get_pass
     old_get_input = config.get_input
     config.get_input = get_input
     database = Database()
+    database.settings.host = "127.0.0.1"
+    database.settings.user = f"test_user_{test_id}"
+    database.settings.password = test_id
+    database.settings.db_name = f"test_{test_id}"
     await database.init(None, None)
     config.get_pass = old_get_pass
     config.get_input = old_get_input
@@ -75,8 +79,8 @@ async def tmp_database(tmp_env: os._Environ[str]) -> AsyncIterator[Database]:
     database.settings.db_name = "postgres"
     config.get_pass = old_get_pass
     await database.connect()
-    await database._connection.execute(f'DROP DATABASE "test_{test_id}"')
-    await database._connection.execute(f'DROP USER "test_user_{test_id}"')
+    await database.execute(f'DROP DATABASE "test_{test_id}"')
+    await database.execute(f'DROP USER "test_user_{test_id}"')
     await database.disconnect()
 
 
