@@ -8,7 +8,7 @@ This guide assumes some knowledge of computers, operating systems and terminals/
 ## Table of contents
 
 - [DEV](#dev)
-  - [Prerequisites](#prerequisits)
+  - [Prerequisites](#prerequisites)
     - [Git](#git)
     - [Docker](#docker)
   - [Up and running](#up-and-running)
@@ -17,16 +17,19 @@ This guide assumes some knowledge of computers, operating systems and terminals/
 
 ## DEV
 
-_WE STRONGLY ADVISE AGAINST RUNNING THIS SETUP IN PRODUCTION ENVIRONMENTS_
+_WE STRONGLY ADVISE AGAINST RUNNING THIS SETUP IN PRODUCTION ENVIRONMENTS_  
+
 This will go over how to simply and quickly set up an instance of both the TicketFlash software
 and other software required, such as postgres for the database.  
 
-In case of the DEV environment, most software is bundled in a docker compose file.  
+For the DEV environment, most software is bundled in a docker compose file.  
 The total time to walk through this process should not be more then a couple minutes.  
 
-### Prerequisits
+The `production` grade installation is more involved and takes longer.  
 
-Some other software, all open source, is requried before being able to run TicketFlash.  
+### Prerequisites
+
+Some other software, all of it open source, is required before being able to run TicketFlash.  
 
 #### Git
 
@@ -36,7 +39,7 @@ Simply follow the instructions on how to install from Git's own website:
 
 [How to install Git](https://git-scm.com/install/)
 
-Once installed navigate to where you would liek to install the project, such us under your user, or under `/opt` and execute the following:  
+Once installed navigate to where you would like to install the project, such us under your user, or under `/opt` and execute the following:  
 
 ```shell
 /opt $> git clone https://github.com/kazaamjt/TicketFlash.git
@@ -52,7 +55,7 @@ Next, install Docker for your operating system:
 
 ### Up and Running
 
-With the prerequisits installed we can move on to the getting the TicketFlash software itself up and running.  
+With the prerequisites installed we can move on to getting the TicketFlash software itself up and running.  
 First, create a file called `.env` in the root of the project, with the following contents:  
 
 ```txt
@@ -111,21 +114,21 @@ Once it is done the container used for the setup will be removed automatically.
 This should produce an output similar to this:  
 
 ```txt
-2026-09-10 16:16:04,083 - ticket_flash.backend.database - DEBUG - Connectiong to database.
+2026-09-10 16:16:04,083 - ticket_flash.backend.database - DEBUG - Connecting to database.
 2026-09-10 16:16:04,258 - ticket_flash.backend.database - INFO - Connected to database.
 2026-09-10 16:16:04,258 - ticket_flash.backend.database - INFO - Creating new postgres user 'ticket_flash'.
 2026-09-10 16:16:04,284 - ticket_flash.backend.database - INFO - Creating new postgres database 'TicketFlash'.
 2026-09-10 16:16:04,478 - ticket_flash.backend.database - DEBUG - Disconnecting from database.
 2026-09-10 16:16:04,482 - ticket_flash.backend.database - DEBUG - Disconnected from database.
 Populating new database.
-2026-09-10 16:16:04,482 - ticket_flash.backend.database - DEBUG - Connectiong to database.
+2026-09-10 16:16:04,482 - ticket_flash.backend.database - DEBUG - Connecting to database.
 2026-09-10 16:16:04,618 - ticket_flash.backend.database - INFO - Connected to database.
 2026-09-10 16:16:04,618 - ticket_flash.backend.database - DEBUG - Schema version: 1
 2026-09-10 16:16:04,651 - ticket_flash.backend.database - DEBUG - Disconnecting from database.
 2026-09-10 16:16:04,655 - ticket_flash.backend.database - DEBUG - Disconnected from database.
 ```
 
-Finaly, we are ready to run our container:
+Finally, we are ready to run our container:
 
 ```bash
 docker run --rm -it -d \
@@ -136,7 +139,7 @@ docker run --rm -it -d \
     ticket_flash
 ```
 
-Test wether everything is functional either by surfing to the [health page](http://localhost:3000/health) or
+Test whether everything is functional either by surfing to the [health page](http://localhost:3000/health) or
 by curling the health page:
 
 ```bash
@@ -151,7 +154,7 @@ This should produce the following output:
 
 ### shutdown
 
-The shutdown procedure shutsdown the applications, but preserves the data.  
+The shutdown procedure stops the applications, but preserves the data.  
 To shutdown, run the following:  
 
 ```bash
@@ -173,7 +176,7 @@ docker run --rm -it -d \
 
 ### Removal
 
-To fuly remove the application and its data, please run:
+To fully remove the application and its data, please run:
 
 ```bash
 docker stop ticket_flash

@@ -55,7 +55,7 @@ class Database:
         """Connect to PG."""
         if not self._connected:
             try:
-                logger.debug("Connectiong to database.")
+                logger.debug("Connecting to database.")
                 self._pool = await asyncpg.create_pool(
                     host=self.settings.host,
                     user=self.settings.user,
