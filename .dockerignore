@@ -11,3 +11,5 @@ venv
 # Environment files
 .env
 env_vars
+
+# Test files

@@ -10,6 +10,8 @@ services:
       POSTGRES_PASSWORD: ${TF_PG_ADMIN_PASS}
     volumes:
       - postgres-data:/var/lib/postgresql
+    networks:
+      - ticket-flash-network
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4
@@ -17,11 +19,17 @@ services:
     ports:
       - "8888:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.dev
+      PGADMIN_DEFAULT_EMAIL: admin@local.tf.dev
       PGADMIN_DEFAULT_PASSWORD: ${TF_PG_ADMIN_PASS}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - ticket-flash-network
 
 volumes:
   postgres-data:
   pgadmin-data:
+
+networks:
+  ticket-flash-network:
+    name: ticket-flash-network

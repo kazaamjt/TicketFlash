@@ -13,8 +13,7 @@ from ticket_flash.backend.database import Database
 @pytest.mark.asyncio(loop_scope="session")
 async def test_init(tmp_database: Database) -> None:
     """
-    This function is empty on purpose.
-    It tests the init script and the tmp_database fixture.
+    This function tests the init script and the tmp_database fixture.
     If it fails, most likely the other tests will also fail.
     """
     assert await tmp_database.status() == "ok"

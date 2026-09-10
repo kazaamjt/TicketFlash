@@ -13,8 +13,8 @@ import click
 
 from . import __version__, config
 from .backend.database import SCHEMA_VERSION, Database
-from .error import BaseError
 from .backend.object_def_table import DEF_TABLE
+from .error import BaseError
 from .server import Server
 from .types import JsonSchema
 
