@@ -11,12 +11,11 @@ from typing import Awaitable, Callable, ParamSpec
 
 import click
 
-from . import __version__, config
+from . import DEVMODE, PRODUCTION, __version__, config
 from .backend.database import SCHEMA_VERSION, Database
 from .backend.object_def_table import DEF_TABLE
 from .error import BaseError
 from .server import Server
-from .types import JsonSchema
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +96,14 @@ async def _init_db(username: str | None, db_name: str | None) -> None:
 
 @main.group()
 def dev() -> None:
-    """Developer commands. Should not be touched by third parties."""
+    """Developer commands used during the devlopment process of TicketFlash."""
+    if PRODUCTION or not DEVMODE:
+        print(
+            "ERROR: To access these commands, tf cannot be running in production mode.",
+            "It must be running in dev mode.",
+            sep="\n",
+        )
+        sys.exit(1)
 
 
 @dev.command
@@ -109,7 +115,7 @@ def export_schema() -> None:
 
 
 def _export_schema() -> None:
-    export_path = Path(__file__).resolve().parent.parent / "schema"
+    export_path = Path(__file__).resolve().parent / "backend" / "schema"
     if not export_path.exists():
         export_path.mkdir()
 
@@ -118,12 +124,11 @@ def _export_schema() -> None:
         raise BaseError(f"Schema directory v{SCHEMA_VERSION} already exists")
     schema_export_path.mkdir()
 
-    export_dict: dict[str, JsonSchema] = {}
-    for name, cls in DEF_TABLE.api_classes.items():
-        export_dict[name] = cls.model_json_schema()
-
+    export_dict, init_statement = DEF_TABLE.export_schema()
     schema_file = schema_export_path / "schema.json"
     schema_file.write_text(json.dumps(export_dict, indent=2), encoding="utf-8")
+    init_file = schema_export_path / "schema.sql"
+    init_file.write_text(init_statement, encoding="utf-8")
 
 
 if __name__ == "__main__":

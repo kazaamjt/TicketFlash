@@ -5,6 +5,8 @@ A catalog that keeps track of all the the different objects.
 import logging
 from typing import TYPE_CHECKING, TypeVar
 
+from ..types import JsonSchema
+
 if TYPE_CHECKING:
     from .objects import BackendObject
 
@@ -32,6 +34,17 @@ class ObjectDefTable:
             )
 
         DEF_TABLE.api_classes[cls.__name__] = cls
+
+    def export_schema(self) -> tuple[JsonSchema, str]:
+        """Creates a json encodable, jsonschema-like schema ready for writing to a file."""
+        export_dict: JsonSchema = {}
+        init_statement = ""
+        for name, cls in self.api_classes.items():
+            export_dict[name] = cls.export_schema()
+            init_statement += cls.gen_create_statement()
+            init_statement += "\n"
+
+        return export_dict, init_statement
 
 
 DEF_TABLE = ObjectDefTable()

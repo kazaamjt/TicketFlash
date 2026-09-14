@@ -5,6 +5,7 @@ Interface for talking to the postgres db.
 import asyncio
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import asyncpg
@@ -207,5 +208,10 @@ class Database:
             INSERT INTO schema_version (version)
             VALUES ({SCHEMA_VERSION});
             """)
+
+        init_script = (
+            Path(__file__).resolve().parent / f"schema/{SCHEMA_VERSION}/schema.sql"
+        )
+        await self.execute(init_script.read_text(encoding="utf-8"))
 
         await self.disconnect()

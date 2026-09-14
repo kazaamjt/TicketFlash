@@ -1,0 +1,123 @@
+{
+  "User": {
+    "description": "Represents a simple user.",
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "email": {
+        "maxLength": 255,
+        "title": "Email",
+        "type": "string"
+      },
+      "created_at": {
+        "format": "date-time",
+        "title": "Created At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "email",
+      "created_at"
+    ],
+    "title": "User",
+    "type": "object",
+    "primary_key": "id"
+  },
+  "UserMetadata": {
+    "description": "Additional data of the user.",
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "first_name": {
+        "anyOf": [
+          {
+            "maxLength": 255,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "First Name"
+      },
+      "last_name": {
+        "anyOf": [
+          {
+            "maxLength": 255,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Last Name"
+      },
+      "address": {
+        "anyOf": [
+          {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Address"
+      },
+      "postal_code": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Postal Code"
+      },
+      "city": {
+        "anyOf": [
+          {
+            "maxLength": 255,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "City"
+      },
+      "telephone": {
+        "anyOf": [
+          {
+            "maxLength": 20,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Telephone"
+      }
+    },
+    "required": [
+      "id"
+    ],
+    "title": "UserMetadata",
+    "type": "object",
+    "primary_key": "id"
+  }
+}

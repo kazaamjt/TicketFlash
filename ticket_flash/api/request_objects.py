@@ -2,13 +2,13 @@
 Request Objects describe what an http request should look like.
 """
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from pydantic import BaseModel
 
 from ..backend.objects import User, UserMetadata
+from ..types import now
 
 if TYPE_CHECKING:
     from ..backend.database import Database
@@ -38,7 +38,7 @@ class UserCreateRequest(HTTPRequestModel):
         Creates a user in the backend.
         """
         _id = uuid4()
-        created_at = datetime.now()
+        created_at = now()
         user = User(id=_id, email=self.email, created_at=created_at)
         user_metadata = UserMetadata(
             id=_id,
