@@ -99,7 +99,11 @@ class Database:
         async with self._pool.acquire() as connection:
             return await connection.fetchval(query, *args)
 
-    async def execute(self, query: str, *args: object) -> Any:
+    async def fetchrow(self, query: str, *args: object) -> asyncpg.Record | None:
+        async with self._pool.acquire() as connection:
+            return await connection.fetchrow(query, *args)
+
+    async def execute(self, query: str, *args: object) -> str:
         async with self._pool.acquire() as connection:
             return await connection.execute(query, *args)
 

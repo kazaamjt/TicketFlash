@@ -3,11 +3,20 @@
 # pylint: disable=protected-access
 # pylint: disable=too-many-statements
 # pylint: disable=unused-argument
+"""
+When testing the database layer,
+make sure the loop_scope is set to "session"
+"""
+
+from uuid import uuid4
+
 import asyncpg
 import pytest
 from pytest_mock import MockerFixture
 
 from ticket_flash.backend.database import Database
+from ticket_flash.backend.objects import User
+from ticket_flash.types import now
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -77,3 +86,24 @@ async def test_health_check_failure(
     assert await tmp_database.status() == "error"
 
     health_check.assert_called_once_with(1)
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_user_object(tmp_database: Database) -> None:
+    user_id = uuid4()
+    email = "test@test.local"
+    creation_date = now()
+    user = User(id=user_id, email=email, created_at=creation_date)
+    await user.insert(tmp_database)
+
+    verify_id = await User.get_by_id(tmp_database, user_id)
+    assert verify_id is not None
+    assert verify_id.id == user.id
+    assert verify_id.email == user.email
+    assert verify_id.created_at == user.created_at
+
+    verify_email = await User.get_by_email(tmp_database, email)
+    assert verify_email is not None
+    assert verify_email.id == user.id
+    assert verify_email.email == user.email
+    assert verify_email.created_at == user.created_at

@@ -1,14 +1,14 @@
 CREATE TABLE users (
     id UUID PRIMARY KEY,
-    email TEXT NOT NULL,
+    email VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );
-CREATE TABLE user-metadata (
+CREATE TABLE user_metadata (
     id UUID PRIMARY KEY,
-    first_name TEXT,
-    last_name TEXT,
-    address TEXT,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    address VARCHAR(1000),
     postal_code INTEGER,
-    city TEXT,
-    telephone TEXT
+    city VARCHAR(255),
+    telephone VARCHAR(20)
 );

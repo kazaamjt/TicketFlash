@@ -81,7 +81,7 @@ disallow_untyped_decorators = true
 
 [tool.flake8]
 max-line-length = 120
-ignore = ["W191", "W503", "F401", "E203", "E501"]
+ignore = ["W191", "W503", "F401", "E203", "E501", "E704"]
 exclude = [
     "__pycache__",
     "build",

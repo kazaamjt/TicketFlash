@@ -51,7 +51,7 @@ def get_input(prompt: str, default: str) -> str:
     return default
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def tmp_database() -> AsyncIterator[Database]:
     """
     When using this fixture, be sure to use add (loop_scope="session")
