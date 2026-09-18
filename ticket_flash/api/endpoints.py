@@ -119,7 +119,7 @@ class Users(Endpoint):
             {
                 **user.model_dump(mode="json"),
                 "metadata": metadata.model_dump(
-                    mode="json", exclude={"id"}, exclude_none=True
+                    mode="json", exclude={"user_id"}, exclude_none=True
                 ),
             },
             status=201,

@@ -34,6 +34,7 @@ class BackendObject(BaseModel):
     table_name: ClassVar[str | None] = None
     primary_key: ClassVar[str]
     uniques: ClassVar[list[str]] = []
+    foreign_keys: ClassVar[dict[str, dict[str, str]]] = {}
 
     @classmethod
     def export_schema(cls) -> JsonSchema:
@@ -62,6 +63,17 @@ class BackendObject(BaseModel):
                     statement += " NOT NULL"
                 if name in cls.uniques:
                     statement += " UNIQUE"
+
+            foreign_key_mapping = cls.foreign_keys.get(name)
+            if foreign_key_mapping is not None:
+                indent = "        "
+                if len(foreign_key_mapping) != 1:
+                    raise SQLStatementGenerationError(
+                        "Expected exactly 1 foreign key mapping."
+                    )
+                for table, key in foreign_key_mapping.items():
+                    statement += "\n" + indent + f"REFERENCES {table}({key})"
+                    statement += "\n" + indent + "ON DELETE CASCADE"
 
             statement += ",\n"
 
@@ -127,10 +139,11 @@ register(User)
 class UserMetadata(BackendObject):
     """Additional data of the user."""
 
-    primary_key = "id"
+    primary_key = "user_id"
     table_name = "user_metadata"
+    foreign_keys = {"user_id": {User.get_table_name(): "id"}}
 
-    id: UUID
+    user_id: UUID
     created_at: datetime
     first_name: str | None = Field(max_length=255, default=None)
     last_name: str | None = Field(max_length=255, default=None)
@@ -141,11 +154,11 @@ class UserMetadata(BackendObject):
 
     async def insert(self, db: "Database") -> None:
         statement = f"INSERT INTO {self.get_table_name()} "
-        statement += "(id, created_at, first_name, last_name, address, postal_code, city, telephone) "
+        statement += "(user_id, created_at, first_name, last_name, address, postal_code, city, telephone) "
         statement += "VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
         await db.execute(
             statement,
-            self.id,
+            self.user_id,
             self.created_at,
             self.first_name,
             self.last_name,
@@ -159,7 +172,7 @@ class UserMetadata(BackendObject):
     async def get_by_id(cls, db: "Database", user_id: UUID) -> "UserMetadata | None":
         """Retrieve using its id."""
         statement = f"SELECT * FROM {cls.get_table_name()} WHERE "
-        statement += "id = $1"
+        statement += "user_id = $1"
         row = await db.fetchrow(statement, user_id)
         if row is None:
             return None

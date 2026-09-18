@@ -41,7 +41,7 @@ class UserCreateRequest(HTTPRequestModel):
         created_at = now()
         user = User(id=_id, email=self.email)
         user_metadata = UserMetadata(
-            id=_id,
+            user_id=_id,
             created_at=created_at,
             first_name=self.first_name,
             last_name=self.last_name,

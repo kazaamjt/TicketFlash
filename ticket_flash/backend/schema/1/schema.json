@@ -24,9 +24,9 @@
   "UserMetadata": {
     "description": "Additional data of the user.",
     "properties": {
-      "id": {
+      "user_id": {
         "format": "uuid",
-        "title": "Id",
+        "title": "User Id",
         "type": "string"
       },
       "created_at": {
@@ -113,11 +113,11 @@
       }
     },
     "required": [
-      "id",
+      "user_id",
       "created_at"
     ],
     "title": "UserMetadata",
     "type": "object",
-    "primary_key": "id"
+    "primary_key": "user_id"
   }
 }

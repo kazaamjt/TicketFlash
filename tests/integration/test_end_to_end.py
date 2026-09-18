@@ -32,20 +32,20 @@ async def test_endpoint_health(http_client: TestClient) -> None:
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_endpoint_users(
+async def test_endpoint_users_e2e(
     http_client: TestClient, random_phone_number: str, tmp_database: Database
 ) -> None:
     assert endpoints.Users.path == "/v1/users"
 
     response_1 = await http_client.post(
-        endpoints.Users.path, json={"email": "test@test.com"}
+        endpoints.Users.path, json={"email": "test_endpoint_users_e2e@test.com"}
     )
     assert response_1.status == 201
     response_1_json = await response_1.json()
     assert isinstance(response_1_json, dict)
     assert response_1_json == {
         "id": response_1_json["id"],
-        "email": "test@test.com",
+        "email": "test_endpoint_users_e2e@test.com",
         "metadata": {
             "created_at": response_1_json["metadata"]["created_at"],
         },
@@ -53,7 +53,7 @@ async def test_endpoint_users(
 
     verify_user_1 = await User.get_by_id(tmp_database, response_1_json["id"])
     assert verify_user_1 is not None
-    assert verify_user_1.email == "test@test.com"
+    assert verify_user_1.email == "test_endpoint_users_e2e@test.com"
     verify_user_1_meta = await UserMetadata.get_by_id(
         tmp_database, response_1_json["id"]
     )
@@ -63,14 +63,14 @@ async def test_endpoint_users(
     )
 
     response_taken_email = await http_client.post(
-        endpoints.Users.path, json={"email": "test@test.com"}
+        endpoints.Users.path, json={"email": "test_endpoint_users_e2e@test.com"}
     )
     assert response_taken_email.status == 409
 
     response_2 = await http_client.post(
         endpoints.Users.path,
         json={
-            "email": "test2@test.com",
+            "email": "test_endpoint_users_e2e_e2e_2@test.com",
             "created_at": response_1_json["metadata"]["created_at"],
             "first_name": "test",
             "last_name": "test",
@@ -86,7 +86,7 @@ async def test_endpoint_users(
     assert isinstance(response_2_json, dict)
     assert response_2_json == {
         "id": response_2_json["id"],
-        "email": "test2@test.com",
+        "email": "test_endpoint_users_e2e_e2e_2@test.com",
         "metadata": {
             "first_name": "test",
             "last_name": "test",
@@ -98,9 +98,9 @@ async def test_endpoint_users(
         },
     }
 
-    verify_user_2 = await User.get_by_id(tmp_database, response_1_json["id"])
+    verify_user_2 = await User.get_by_id(tmp_database, response_2_json["id"])
     assert verify_user_2 is not None
-    assert verify_user_2.email == "test@test.com"
+    assert verify_user_2.email == "test_endpoint_users_e2e_e2e_2@test.com"
     verify_user_2_meta = await UserMetadata.get_by_id(
         tmp_database, response_2_json["id"]
     )

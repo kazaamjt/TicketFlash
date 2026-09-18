@@ -30,14 +30,14 @@ async def test_endpoint_users(
     assert endpoints.Users.path == "/v1/users"
 
     response_1 = await http_client_mock_db.post(
-        endpoints.Users.path, json={"email": "test@test.com"}
+        endpoints.Users.path, json={"email": "test_endpoint_users@test.com"}
     )
     assert response_1.status == 201
     response_1_json = await response_1.json()
     assert isinstance(response_1_json, dict)
     assert response_1_json == {
         "id": response_1_json["id"],
-        "email": "test@test.com",
+        "email": "test_endpoint_users@test.com",
         "metadata": {
             "created_at": response_1_json["metadata"]["created_at"],
         },

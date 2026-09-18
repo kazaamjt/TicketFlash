@@ -3,7 +3,9 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE
 );
 CREATE TABLE user_metadata (
-    id UUID PRIMARY KEY,
+    user_id UUID PRIMARY KEY
+        REFERENCES users(id)
+        ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL,
     first_name VARCHAR(255),
     last_name VARCHAR(255),

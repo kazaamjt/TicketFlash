@@ -91,7 +91,7 @@ async def test_health_check_failure(
 @pytest.mark.asyncio(loop_scope="session")
 async def test_user_object(tmp_database: Database) -> None:
     user_id = uuid4()
-    email = "test@test.local"
+    email = "test_user_object@test.local"
     user = User(id=user_id, email=email)
     await user.insert(tmp_database)
 
@@ -112,11 +112,13 @@ async def test_user_object(tmp_database: Database) -> None:
 async def test_usermetadata_object(tmp_database: Database) -> None:
     user_id = uuid4()
     creation_date = now()
-    user_metadata = UserMetadata(id=user_id, created_at=creation_date)
+    user = User(id=user_id, email="test_usermetadata_object@test.local")
+    await user.insert(tmp_database)
+    user_metadata = UserMetadata(user_id=user_id, created_at=creation_date)
     await user_metadata.insert(tmp_database)
 
     verify_id = await UserMetadata.get_by_id(tmp_database, user_id)
     assert verify_id is not None
-    assert verify_id.id == user_metadata.id
+    assert verify_id.user_id == user_metadata.user_id
     assert verify_id.created_at == user_metadata.created_at
     assert verify_id is not user_metadata
