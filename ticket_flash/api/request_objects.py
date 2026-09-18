@@ -33,15 +33,16 @@ class UserCreateRequest(HTTPRequestModel):
     city: str | None = None
     telephone: str | None = None
 
-    def create_user(self) -> tuple[User, UserMetadata]:
+    async def create_user(self, db: "Database") -> tuple[User, UserMetadata]:
         """
         Creates a user in the backend.
         """
         _id = uuid4()
         created_at = now()
-        user = User(id=_id, email=self.email, created_at=created_at)
+        user = User(id=_id, email=self.email)
         user_metadata = UserMetadata(
             id=_id,
+            created_at=created_at,
             first_name=self.first_name,
             last_name=self.last_name,
             address=self.address,
@@ -49,5 +50,8 @@ class UserCreateRequest(HTTPRequestModel):
             city=self.city,
             telephone=self.telephone,
         )
+
+        await user.insert(db)
+        await user_metadata.insert(db)
 
         return user, user_metadata

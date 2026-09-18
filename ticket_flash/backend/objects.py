@@ -88,15 +88,15 @@ class User(BackendObject):
 
     primary_key = "id"
     table_name = "users"
+    uniques = ["email"]
 
     id: UUID
     email: str = Field(max_length=255)
-    created_at: datetime
 
     async def insert(self, db: "Database") -> None:
         statement = f"INSERT INTO {self.get_table_name()} "
-        statement += "(id, email, created_at) VALUES($1, $2, $3)"
-        await db.execute(statement, self.id, self.email, self.created_at)
+        statement += "(id, email) VALUES($1, $2)"
+        await db.execute(statement, self.id, self.email)
 
     @classmethod
     async def get_by_id(cls, db: "Database", user_id: UUID) -> "User | None":
@@ -131,12 +131,40 @@ class UserMetadata(BackendObject):
     table_name = "user_metadata"
 
     id: UUID
+    created_at: datetime
     first_name: str | None = Field(max_length=255, default=None)
     last_name: str | None = Field(max_length=255, default=None)
     address: str | None = Field(max_length=1000, default=None)
     postal_code: int | None = None
     city: str | None = Field(max_length=255, default=None)
     telephone: str | None = Field(max_length=20, default=None)
+
+    async def insert(self, db: "Database") -> None:
+        statement = f"INSERT INTO {self.get_table_name()} "
+        statement += "(id, created_at, first_name, last_name, address, postal_code, city, telephone) "
+        statement += "VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
+        await db.execute(
+            statement,
+            self.id,
+            self.created_at,
+            self.first_name,
+            self.last_name,
+            self.address,
+            self.postal_code,
+            self.city,
+            self.telephone,
+        )
+
+    @classmethod
+    async def get_by_id(cls, db: "Database", user_id: UUID) -> "UserMetadata | None":
+        """Retrieve using its id."""
+        statement = f"SELECT * FROM {cls.get_table_name()} WHERE "
+        statement += "id = $1"
+        row = await db.fetchrow(statement, user_id)
+        if row is None:
+            return None
+
+        return UserMetadata(**row)
 
 
 register(UserMetadata)

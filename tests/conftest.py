@@ -97,8 +97,16 @@ def mock_db() -> Database:
 
 
 @pytest_asyncio.fixture
-async def http_client(mock_db: Database) -> AsyncIterator[TestClient]:
+async def http_client_mock_db(mock_db: Database) -> AsyncIterator[TestClient]:
     server = Server(mock_db)
+    app = server._create_app()
+    async with TestClient(TestServer(app)) as client:
+        yield client
+
+
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def http_client(tmp_database: Database) -> AsyncIterator[TestClient]:
+    server = Server(tmp_database)
     app = server._create_app()
     async with TestClient(TestServer(app)) as client:
         yield client

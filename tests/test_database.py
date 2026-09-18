@@ -15,7 +15,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from ticket_flash.backend.database import Database
-from ticket_flash.backend.objects import User
+from ticket_flash.backend.objects import User, UserMetadata
 from ticket_flash.types import now
 
 
@@ -92,18 +92,31 @@ async def test_health_check_failure(
 async def test_user_object(tmp_database: Database) -> None:
     user_id = uuid4()
     email = "test@test.local"
-    creation_date = now()
-    user = User(id=user_id, email=email, created_at=creation_date)
+    user = User(id=user_id, email=email)
     await user.insert(tmp_database)
 
     verify_id = await User.get_by_id(tmp_database, user_id)
     assert verify_id is not None
     assert verify_id.id == user.id
     assert verify_id.email == user.email
-    assert verify_id.created_at == user.created_at
+    assert verify_id is not user
 
     verify_email = await User.get_by_email(tmp_database, email)
     assert verify_email is not None
     assert verify_email.id == user.id
     assert verify_email.email == user.email
-    assert verify_email.created_at == user.created_at
+    assert verify_email is not user
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_usermetadata_object(tmp_database: Database) -> None:
+    user_id = uuid4()
+    creation_date = now()
+    user_metadata = UserMetadata(id=user_id, created_at=creation_date)
+    await user_metadata.insert(tmp_database)
+
+    verify_id = await UserMetadata.get_by_id(tmp_database, user_id)
+    assert verify_id is not None
+    assert verify_id.id == user_metadata.id
+    assert verify_id.created_at == user_metadata.created_at
+    assert verify_id is not user_metadata

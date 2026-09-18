@@ -11,17 +11,11 @@
         "maxLength": 255,
         "title": "Email",
         "type": "string"
-      },
-      "created_at": {
-        "format": "date-time",
-        "title": "Created At",
-        "type": "string"
       }
     },
     "required": [
       "id",
-      "email",
-      "created_at"
+      "email"
     ],
     "title": "User",
     "type": "object",
@@ -33,6 +27,11 @@
       "id": {
         "format": "uuid",
         "title": "Id",
+        "type": "string"
+      },
+      "created_at": {
+        "format": "date-time",
+        "title": "Created At",
         "type": "string"
       },
       "first_name": {
@@ -114,7 +113,8 @@
       }
     },
     "required": [
-      "id"
+      "id",
+      "created_at"
     ],
     "title": "UserMetadata",
     "type": "object",

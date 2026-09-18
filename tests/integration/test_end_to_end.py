@@ -3,17 +3,25 @@
 # pylint: disable=protected-access
 # pylint: disable=too-many-statements
 # pylint: disable=unused-argument
+"""
+End to end tests, these migt be sloz.
+Make sure the loop_scope is set to "session" for every test touching the DB layer.
+"""
+
+from datetime import datetime
+
 import pytest
 from aiohttp.test_utils import TestClient
 
 from ticket_flash.api import VERSION, endpoints
-from ticket_flash.backend.database import SCHEMA_VERSION
+from ticket_flash.backend.database import SCHEMA_VERSION, Database
+from ticket_flash.backend.objects import User, UserMetadata
 
 
-@pytest.mark.asyncio
-async def test_endpoint_health(http_client_mock_db: TestClient) -> None:
+@pytest.mark.asyncio(loop_scope="session")
+async def test_endpoint_health(http_client: TestClient) -> None:
     assert endpoints.Health.path == "/health"
-    response = await http_client_mock_db.get("/health")
+    response = await http_client.get("/health")
     assert response.status == 200
     json_resp = await response.json()
     assert json_resp == {
@@ -23,13 +31,13 @@ async def test_endpoint_health(http_client_mock_db: TestClient) -> None:
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_endpoint_users(
-    http_client_mock_db: TestClient, random_phone_number: str
+    http_client: TestClient, random_phone_number: str, tmp_database: Database
 ) -> None:
     assert endpoints.Users.path == "/v1/users"
 
-    response_1 = await http_client_mock_db.post(
+    response_1 = await http_client.post(
         endpoints.Users.path, json={"email": "test@test.com"}
     )
     assert response_1.status == 201
@@ -43,7 +51,23 @@ async def test_endpoint_users(
         },
     }
 
-    response_2 = await http_client_mock_db.post(
+    verify_user_1 = await User.get_by_id(tmp_database, response_1_json["id"])
+    assert verify_user_1 is not None
+    assert verify_user_1.email == "test@test.com"
+    verify_user_1_meta = await UserMetadata.get_by_id(
+        tmp_database, response_1_json["id"]
+    )
+    assert verify_user_1_meta is not None
+    assert verify_user_1_meta.created_at == datetime.fromisoformat(
+        response_1_json["metadata"]["created_at"]
+    )
+
+    response_taken_email = await http_client.post(
+        endpoints.Users.path, json={"email": "test@test.com"}
+    )
+    assert response_taken_email.status == 409
+
+    response_2 = await http_client.post(
         endpoints.Users.path,
         json={
             "email": "test2@test.com",
@@ -73,3 +97,14 @@ async def test_endpoint_users(
             "telephone": random_phone_number,
         },
     }
+
+    verify_user_2 = await User.get_by_id(tmp_database, response_1_json["id"])
+    assert verify_user_2 is not None
+    assert verify_user_2.email == "test@test.com"
+    verify_user_2_meta = await UserMetadata.get_by_id(
+        tmp_database, response_2_json["id"]
+    )
+    assert verify_user_2_meta is not None
+    assert verify_user_2_meta.created_at == datetime.fromisoformat(
+        response_2_json["metadata"]["created_at"]
+    )

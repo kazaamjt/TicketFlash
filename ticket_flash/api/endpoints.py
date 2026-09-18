@@ -6,6 +6,7 @@ Need to be loaded by the server.
 import json
 from typing import TypeVar
 
+import asyncpg
 from aiohttp import web
 from pydantic import ValidationError
 
@@ -109,7 +110,10 @@ class Users(Endpoint):
         if isinstance(validated_request, web.Response):
             return validated_request
 
-        user, metadata = validated_request.create_user()
+        try:
+            user, metadata = await validated_request.create_user(self.db)
+        except asyncpg.exceptions.UniqueViolationError:
+            return web.json_response({"error": "Email already registered"}, status=409)
 
         return web.json_response(
             {
