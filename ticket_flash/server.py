@@ -11,7 +11,6 @@ from aiohttp import web
 from . import PRODUCTION, config
 from .api.endpoints import Endpoint, get_endpoints
 from .backend.database import Database
-from .error import BaseError
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,8 @@ class HTTPSettings:
 
 class Server:
     """
-    The overarching system that manages the webserver and database
-    and makes them play nice.
+    The overarching system that manages the webserver, database,
+    and other systems, and makes them play nice.
     """
 
     def __init__(self, database: Database | None = None) -> None:
@@ -49,8 +48,8 @@ class Server:
         for cls in get_endpoints():
             endpoint = cls(self.db)
             if endpoint.path == "":
-                raise BaseError(
-                    "Tried to register a route whose path class variable was not overwritten."
+                raise ValueError(
+                    "Tried to register a route whose path variable was not correctly set."
                 )
             self.endpoints.append(endpoint)
             routes.extend(endpoint.register())

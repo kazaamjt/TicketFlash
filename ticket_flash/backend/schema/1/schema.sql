@@ -14,3 +14,11 @@ CREATE TABLE user_metadata (
     city VARCHAR(255),
     telephone VARCHAR(20)
 );
+CREATE TABLE user_logins (
+    user_id UUID PRIMARY KEY
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+    password_hash TEXT NOT NULL,
+    pepper_version INTEGER NOT NULL,
+    active BOOLEAN
+);

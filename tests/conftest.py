@@ -11,6 +11,7 @@ Pytest fixtures live in thise file
 import os
 import random
 from copy import deepcopy
+from pathlib import Path
 from typing import AsyncIterator, Iterable
 from unittest.mock import AsyncMock, Mock
 
@@ -19,6 +20,7 @@ import pytest_asyncio
 from aiohttp.test_utils import TestClient, TestServer
 
 from ticket_flash import config
+from ticket_flash.backend import password_util
 from ticket_flash.backend.database import Database
 from ticket_flash.server import Server
 
@@ -115,3 +117,10 @@ async def http_client(tmp_database: Database) -> AsyncIterator[TestClient]:
 @pytest.fixture
 def random_phone_number() -> str:
     return f"+1212555{random.randint(100, 199)}"
+
+
+@pytest.fixture
+def tmp_config_dir(tmp_path: Path) -> None:
+    config.CONFIG_DIR = tmp_path / "config"
+    config.CONFIG_DIR.mkdir(exist_ok=True)
+    password_util.PEPPERS_FILE = config.CONFIG_DIR / ".tf_peppers"

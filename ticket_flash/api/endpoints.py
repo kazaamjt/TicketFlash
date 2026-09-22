@@ -20,7 +20,7 @@ T = TypeVar("T", bound=HTTPRequestModel)
 def validate_data(validation_class: type[T], data: dict) -> T | web.Response:
     """
     Validates data given an HTTPRequestModel Subclass.
-    Then returns a validatedobject OR a error response.
+    Then returns a validated object OR an error response.
     """
     try:
         validated_data = validation_class(**data)
@@ -75,6 +75,7 @@ class Health(Endpoint):
     path = "/health"
 
     async def get(self, _: web.Request) -> web.Response:
+        """Returns the status off all internal systems."""
         status_all = "ok"
         db_status = await self.db.status()
         if db_status != "ok":

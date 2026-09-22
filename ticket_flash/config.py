@@ -15,6 +15,7 @@ from pathlib import Path
 from .error import BaseError
 
 IGNORE_MISSING_DEFAULTS = False
+CONFIG_DIR = Path.cwd().absolute().resolve() / "config"
 
 
 class ConfigError(BaseError):
@@ -294,3 +295,13 @@ def get_pass(attempt: int = 0) -> str:
         return get_pass(attempt + 1)
 
     raise BaseError("Failed to confirm password too many times.")
+
+
+def mk_config_dir() -> None:
+    """Creates the config dir if it does not exist."""
+    CONFIG_DIR.mkdir(exist_ok=True)
+
+
+def get_config_dir() -> Path:
+    mk_config_dir()
+    return CONFIG_DIR

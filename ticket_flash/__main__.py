@@ -12,6 +12,7 @@ from typing import Awaitable, Callable, ParamSpec
 import click
 
 from . import DEVMODE, PRODUCTION, __version__, config
+from .backend import password_util
 from .backend.database import SCHEMA_VERSION, Database
 from .backend.object_def_table import DEF_TABLE
 from .error import BaseError
@@ -26,7 +27,7 @@ P = ParamSpec("P")
 @click.version_option(__version__)
 def main() -> None:
     """
-    The Ticket Klash web apps backend.
+    The Ticket Flash web app backend.
     """
     config.init_logging()
 
@@ -73,6 +74,21 @@ def _start() -> None:
     server.start()
 
 
+@main.command()
+@click.option("--db-username")
+@click.option("--db-name")
+def init(db_username: str | None, db_name: str | None) -> None:
+    "Initialize the application for use."
+    asyncio.run(_async_cmd_wrapper(_init, db_username, db_name))
+
+
+async def _init(db_username: str | None, db_name: str | None) -> None:
+    print("Generating secrets and initializing database")
+    response = config.get_input("Initialize database? (Y/N)", "y")
+    if response.lower() != "n":
+        await _init_db(db_username, db_name)
+
+
 @main.group()
 def database() -> None:
     """
@@ -92,6 +108,29 @@ async def _init_db(username: str | None, db_name: str | None) -> None:
     config.IGNORE_MISSING_DEFAULTS = True
     db = Database()
     await db.init(username, db_name)
+
+
+@main.group()
+def peppers() -> None:
+    """
+    Commands to manipulate the password systems peppers.
+    """
+
+
+@database.command()
+def rotate_peppers() -> None:
+    """Generate a new pepper for the login system. This is a security measure."""
+    _cmd_wrapper(_rotate_peppers)
+
+
+def _rotate_peppers() -> None:
+    config.get_config_dir().mkdir()
+    password_util.rotate_pepper()
+    pepper = password_util.PEPPER_STRUCT.get_current_pepper()
+    print("Generating new pepper")
+    password_util.print_pepper(pepper)
+    if config.get_input("Clean up old peppers? [Y/n]", "Y").lower() == "y":
+        password_util.clean()
 
 
 @main.group()
@@ -120,9 +159,10 @@ def _export_schema() -> None:
         export_path.mkdir()
 
     schema_export_path = export_path / str(SCHEMA_VERSION)
-    if schema_export_path.exists():
-        raise BaseError(f"Schema directory v{SCHEMA_VERSION} already exists")
-    schema_export_path.mkdir()
+    # NOTE: this should be uncommented once we transition to being a stable release
+    # if schema_export_path.exists():
+    #     raise BaseError(f"Schema directory v{SCHEMA_VERSION} already exists")
+    schema_export_path.mkdir(exist_ok=True)
 
     export_dict, init_statement = DEF_TABLE.export_schema()
     schema_file = schema_export_path / "schema.json"

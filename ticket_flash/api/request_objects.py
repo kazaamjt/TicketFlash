@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
-from ..backend.objects import User, UserMetadata
+from ..backend.objects import User, UserLogin, UserMetadata
 from ..types import now
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ class UserCreateRequest(HTTPRequestModel):
     """
 
     email: str
+    password: str
     first_name: str | None = None
     last_name: str | None = None
     address: str | None = None

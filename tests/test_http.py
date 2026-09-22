@@ -30,7 +30,8 @@ async def test_endpoint_users(
     assert endpoints.Users.path == "/v1/users"
 
     response_1 = await http_client_mock_db.post(
-        endpoints.Users.path, json={"email": "test_endpoint_users@test.com"}
+        endpoints.Users.path,
+        json={"email": "test_endpoint_users@test.com", "password": "password"},
     )
     assert response_1.status == 201
     response_1_json = await response_1.json()
@@ -47,7 +48,7 @@ async def test_endpoint_users(
         endpoints.Users.path,
         json={
             "email": "test2@test.com",
-            "created_at": response_1_json["metadata"]["created_at"],
+            "password": "password",
             "first_name": "test",
             "last_name": "test",
             "address": "test street",

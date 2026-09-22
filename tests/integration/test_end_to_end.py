@@ -38,7 +38,8 @@ async def test_endpoint_users_e2e(
     assert endpoints.Users.path == "/v1/users"
 
     response_1 = await http_client.post(
-        endpoints.Users.path, json={"email": "test_endpoint_users_e2e@test.com"}
+        endpoints.Users.path,
+        json={"email": "test_endpoint_users_e2e@test.com", "password": "password"},
     )
     assert response_1.status == 201
     response_1_json = await response_1.json()
@@ -63,7 +64,8 @@ async def test_endpoint_users_e2e(
     )
 
     response_taken_email = await http_client.post(
-        endpoints.Users.path, json={"email": "test_endpoint_users_e2e@test.com"}
+        endpoints.Users.path,
+        json={"email": "test_endpoint_users_e2e@test.com", "password": "password"},
     )
     assert response_taken_email.status == 409
 
@@ -71,7 +73,7 @@ async def test_endpoint_users_e2e(
         endpoints.Users.path,
         json={
             "email": "test_endpoint_users_e2e_e2e_2@test.com",
-            "created_at": response_1_json["metadata"]["created_at"],
+            "password": "password",
             "first_name": "test",
             "last_name": "test",
             "address": "test street",

@@ -19,7 +19,12 @@
     ],
     "title": "User",
     "type": "object",
-    "primary_key": "id"
+    "primary_key": "id",
+    "table_name": "users",
+    "uniques": [
+      "email"
+    ],
+    "foreign_keys": {}
   },
   "UserMetadata": {
     "description": "Additional data of the user.",
@@ -118,6 +123,51 @@
     ],
     "title": "UserMetadata",
     "type": "object",
-    "primary_key": "user_id"
+    "primary_key": "user_id",
+    "table_name": "user_metadata",
+    "uniques": [],
+    "foreign_keys": {
+      "user_id": {
+        "users": "id"
+      }
+    }
+  },
+  "UserLogin": {
+    "description": "Additional data of the user.",
+    "properties": {
+      "user_id": {
+        "format": "uuid",
+        "title": "User Id",
+        "type": "string"
+      },
+      "password_hash": {
+        "title": "Password Hash",
+        "type": "string"
+      },
+      "pepper_version": {
+        "title": "Pepper Version",
+        "type": "integer"
+      },
+      "active": {
+        "default": false,
+        "title": "Active",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "user_id",
+      "password_hash",
+      "pepper_version"
+    ],
+    "title": "UserLogin",
+    "type": "object",
+    "primary_key": "user_id",
+    "table_name": "user_logins",
+    "uniques": [],
+    "foreign_keys": {
+      "user_id": {
+        "users": "id"
+      }
+    }
   }
 }

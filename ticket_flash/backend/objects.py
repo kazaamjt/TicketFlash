@@ -6,12 +6,12 @@ as well as retrieving them and representing them to the frontend.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from typing import TYPE_CHECKING, ClassVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..types import Json, JsonSchema
+from ..types import Json, JsonSchema, assert_type
 from .object_def_table import register
 
 if TYPE_CHECKING:
@@ -38,9 +38,12 @@ class BackendObject(BaseModel):
 
     @classmethod
     def export_schema(cls) -> JsonSchema:
-        """creates a jsonschema of the given class. Including primary key."""
+        """creates a jsonschema of the given class. Including custom fields we added."""
         export_dict = cls.model_json_schema()
         export_dict["primary_key"] = cls.primary_key
+        export_dict["table_name"] = cls.table_name
+        export_dict["uniques"] = cls.uniques
+        export_dict["foreign_keys"] = cls.foreign_keys
 
         return export_dict
 
@@ -49,11 +52,11 @@ class BackendObject(BaseModel):
         """Generates a full SQL CREATE TABLE statement, human-readable."""
         statement = f"CREATE TABLE {cls.get_table_name()} (\n"
         export_schema = cls.export_schema()
-        properties = _assert_type(export_schema["properties"], dict)
-        required = _assert_type(export_schema["required"], list)
+        properties = assert_type(export_schema["properties"], dict)
+        required = assert_type(export_schema["required"], list)
         for name, x in properties.items():
             statement += f"    {name} "
-            prop = _assert_type(x, dict)
+            prop = assert_type(x, dict)
             prop_type = _interpret_type(name, prop)
             statement += prop_type.type
             if name == cls.primary_key:
@@ -91,6 +94,74 @@ class BackendObject(BaseModel):
     async def insert(self, db: "Database") -> None:
         """Inserts the object in tot he database"""
         raise NotImplementedError
+
+
+@dataclass
+class Property:
+    """JsonSchema property interpretation"""
+
+    name: str
+    type: str = ""
+    nullable: bool = False
+
+
+def _interpret_type(name: str, obj: dict[str, Json]) -> Property:
+    prop = Property(name)
+    any_of = obj.get("anyOf")
+    _max_length: int | None = None
+    if any_of is not None:
+        any_of = assert_type(any_of, list)
+        if len(any_of) < 2:
+            raise SQLStatementGenerationError(
+                f"Expected 2 potential types, got len({any_of})."
+            )
+
+        _type_obj = any_of[0]
+        prop.nullable = True
+
+    else:
+        _type_obj = obj
+
+    _type_obj = assert_type(_type_obj, dict)
+    _type = _type_obj.get("type")
+    if _type == "string":
+        _format = _type_obj.get("format")
+        if _format is not None:
+            _type = _format
+
+        _ml = _type_obj.get("maxLength")
+        if _ml is not None:
+            _max_length = assert_type(_ml, int)
+
+    _jsonschema_type = assert_type(_type, str)
+    prop.type = _jsonschema_type_to_sql_type(_jsonschema_type, _max_length)
+
+    return prop
+
+
+_jsonschema_type_to_sql_matrix = {
+    "string": "VARCHAR",
+    "date-time": "TIMESTAMPTZ",
+    "uuid": "UUID",
+    "integer": "INTEGER",
+    "boolean": "BOOLEAN",
+}
+
+
+def _jsonschema_type_to_sql_type(_type: str, max_length: int | None) -> str:
+    sql_type = _jsonschema_type_to_sql_matrix.get(_type)
+    if sql_type is None:
+        raise SQLStatementGenerationError(
+            f"Failed to convert jsonschema type '{_type}' to SQL type."
+        )
+
+    if sql_type == "VARCHAR":
+        if max_length is None:
+            sql_type = "TEXT"
+        else:
+            sql_type = f"VARCHAR({max_length})"
+
+    return sql_type
 
 
 class User(BackendObject):
@@ -183,88 +254,23 @@ class UserMetadata(BackendObject):
 register(UserMetadata)
 
 
-T = TypeVar("T")
+class UserLogin(BackendObject):
+    """Additional data of the user."""
+
+    primary_key = "user_id"
+    table_name = "user_logins"
+    foreign_keys = {"user_id": {User.get_table_name(): "id"}}
+
+    user_id: UUID
+    password_hash: str
+    pepper_version: int
+    active: bool = False
+
+    async def insert(self, db: "Database") -> None:
+        statement = f"INSERT INTO {self.get_table_name()} "
+        statement += "(user_id, password) "
+        statement += "VALUES($1, $2)"
+        await db.execute(statement, self.user_id, self.password_hash)
 
 
-def _assert_type(obj: Any, required_type: type[T]) -> T:
-    """
-    runtime check to make sure we got the type we're expecting to get.
-    """
-    if not isinstance(obj, required_type):
-        raise SQLStatementGenerationError(
-            f"During statement generation, expected type '{required_type.__name__}'"
-            f"but got '{type(obj)}'"
-        )
-
-    return obj
-
-
-@dataclass
-class Property:
-    """JsonSchema property interpretation"""
-
-    name: str
-    type: str = ""
-    nullable: bool = False
-
-
-def _interpret_type(name: str, obj: dict[str, Json]) -> Property:
-    prop = Property(name)
-    any_of = obj.get("anyOf")
-    _max_length: int | None = None
-    if any_of is not None:
-        any_of = _assert_type(any_of, list)
-        if len(any_of) < 2:
-            raise SQLStatementGenerationError(
-                f"Expected 2 potential types, got len({any_of})."
-            )
-
-        _type_obj = any_of[0]
-        prop.nullable = True
-
-    else:
-        _type_obj = obj
-
-    _type_obj = _assert_type(_type_obj, dict)
-    _type = _type_obj.get("type")
-    if _type == "string":
-        _format = _type_obj.get("format")
-        if _format is not None:
-            _type = _format
-
-        _ml = _type_obj.get("maxLength")
-        if _ml is not None:
-            _max_length = _assert_type(_ml, int)
-
-    _jsonschema_type = _assert_type(_type, str)
-    prop.type = _jsonschema_type_to_sql_type(_jsonschema_type, _max_length)
-
-    return prop
-
-
-_jsonschema_type_to_sql_matrix = {
-    "string": "VARCHAR",
-    "date-time": "TIMESTAMPTZ",
-    "uuid": "UUID",
-    "integer": "INTEGER",
-}
-
-
-def _jsonschema_type_to_sql_type(_type: str, max_length: int | None) -> str:
-    sql_type = _jsonschema_type_to_sql_matrix.get(_type)
-    if sql_type is None:
-        raise SQLStatementGenerationError(
-            "Failed to convert jsonschema type to SQL type."
-        )
-
-    if sql_type == "VARCHAR":
-        if max_length is None:
-            sql_type = "TEXT"
-        else:
-            sql_type = f"VARCHAR({max_length})"
-
-    return sql_type
-
-
-def _require_one_not_none() -> None:
-    pass
+register(UserLogin)
