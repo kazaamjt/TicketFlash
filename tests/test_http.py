@@ -25,7 +25,7 @@ async def test_endpoint_health(http_client_mock_db: TestClient) -> None:
 
 @pytest.mark.asyncio
 async def test_endpoint_users(
-    http_client_mock_db: TestClient, random_phone_number: str
+    http_client_mock_db: TestClient, random_phone_number: str, mock_pepper: None
 ) -> None:
     assert endpoints.Users.path == "/v1/users"
 

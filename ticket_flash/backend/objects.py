@@ -12,6 +12,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from ..types import Json, JsonSchema, assert_type
+from . import password_util
 from .object_def_table import register
 
 if TYPE_CHECKING:
@@ -172,14 +173,15 @@ class User(BackendObject):
     primary_key = "id"
     table_name = "users"
     uniques = ["email"]
+    activated: bool = False
 
     id: UUID
     email: str = Field(max_length=255)
 
     async def insert(self, db: "Database") -> None:
         statement = f"INSERT INTO {self.get_table_name()} "
-        statement += "(id, email) VALUES($1, $2)"
-        await db.execute(statement, self.id, self.email)
+        statement += "(id, email, activated) VALUES($1, $2, $3)"
+        await db.execute(statement, self.id, self.email, self.activated)
 
     @classmethod
     async def get_by_id(cls, db: "Database", user_id: UUID) -> "User | None":
@@ -264,13 +266,19 @@ class UserLogin(BackendObject):
     user_id: UUID
     password_hash: str
     pepper_version: int
-    active: bool = False
 
     async def insert(self, db: "Database") -> None:
         statement = f"INSERT INTO {self.get_table_name()} "
-        statement += "(user_id, password) "
-        statement += "VALUES($1, $2)"
-        await db.execute(statement, self.user_id, self.password_hash)
+        statement += "(user_id, password_hash, pepper_version) "
+        statement += "VALUES($1, $2, $3)"
+        await db.execute(
+            statement, self.user_id, self.password_hash, self.pepper_version
+        )
+
+
+def create_login(user_id: UUID, password: str) -> UserLogin:
+    version, hashed_pash = password_util.hash_password(password)
+    return UserLogin(user_id=user_id, password_hash=hashed_pash, pepper_version=version)
 
 
 register(UserLogin)

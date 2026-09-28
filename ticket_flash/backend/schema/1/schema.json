@@ -2,6 +2,11 @@
   "User": {
     "description": "Represents a simple user.",
     "properties": {
+      "activated": {
+        "default": false,
+        "title": "Activated",
+        "type": "boolean"
+      },
       "id": {
         "format": "uuid",
         "title": "Id",
@@ -147,11 +152,6 @@
       "pepper_version": {
         "title": "Pepper Version",
         "type": "integer"
-      },
-      "active": {
-        "default": false,
-        "title": "Active",
-        "type": "boolean"
       }
     },
     "required": [

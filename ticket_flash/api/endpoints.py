@@ -118,9 +118,11 @@ class Users(Endpoint):
 
         return web.json_response(
             {
-                **user.model_dump(mode="json"),
+                **user.model_dump(mode="json", exclude={"activated"}),
                 "metadata": metadata.model_dump(
-                    mode="json", exclude={"user_id"}, exclude_none=True
+                    mode="json",
+                    exclude={"user_id"},
+                    exclude_none=True,
                 ),
             },
             status=201,

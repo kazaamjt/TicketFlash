@@ -1,4 +1,5 @@
 CREATE TABLE users (
+    activated BOOLEAN,
     id UUID PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE
 );
@@ -19,6 +20,5 @@ CREATE TABLE user_logins (
         REFERENCES users(id)
         ON DELETE CASCADE,
     password_hash TEXT NOT NULL,
-    pepper_version INTEGER NOT NULL,
-    active BOOLEAN
+    pepper_version INTEGER NOT NULL
 );

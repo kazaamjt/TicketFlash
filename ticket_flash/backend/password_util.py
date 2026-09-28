@@ -34,8 +34,8 @@ class PepperStruct(BaseModel):
     peppers: dict[int, str]
     loaded: bool = False
 
-    def get_current_pepper(self) -> str:
-        return self.peppers[self.current_index]
+    def get_current_pepper(self) -> tuple[int, str]:
+        return self.current_index, self.peppers[self.current_index]
 
 
 PEPPER_STRUCT = PepperStruct(current_index=0, peppers={})
@@ -51,8 +51,10 @@ def _pepper(pepper: str, string: str) -> str:
     return base64.b64encode(digest).decode("ascii")
 
 
-def hash_password(string: str) -> str:
-    return _ARGON_HASHER.hash(_pepper(PEPPER_STRUCT.get_current_pepper(), string))
+def hash_password(string: str) -> tuple[int, str]:
+    """Hashes a password and returns the pepper version and the hash."""
+    version, pepper = PEPPER_STRUCT.get_current_pepper()
+    return version, _ARGON_HASHER.hash(_pepper(pepper, string))
 
 
 def verify(string: str, pepper_index: int, stored_hash: str) -> bool:

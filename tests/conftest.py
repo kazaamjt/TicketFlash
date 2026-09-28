@@ -120,7 +120,13 @@ def random_phone_number() -> str:
 
 
 @pytest.fixture
-def tmp_config_dir(tmp_path: Path) -> None:
+def tmp_config_dir(tmp_path: Path) -> Path:
     config.CONFIG_DIR = tmp_path / "config"
     config.CONFIG_DIR.mkdir(exist_ok=True)
     password_util.PEPPERS_FILE = config.CONFIG_DIR / ".tf_peppers"
+    return config.CONFIG_DIR
+
+
+@pytest.fixture
+def mock_pepper(tmp_config_dir: Path) -> None:
+    password_util.rotate_pepper()

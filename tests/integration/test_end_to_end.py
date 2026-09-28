@@ -33,7 +33,10 @@ async def test_endpoint_health(http_client: TestClient) -> None:
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_endpoint_users_e2e(
-    http_client: TestClient, random_phone_number: str, tmp_database: Database
+    http_client: TestClient,
+    random_phone_number: str,
+    tmp_database: Database,
+    mock_pepper: None,
 ) -> None:
     assert endpoints.Users.path == "/v1/users"
 

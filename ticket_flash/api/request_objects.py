@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
-from ..backend.objects import User, UserLogin, UserMetadata
+from ..backend.objects import User, UserMetadata, create_login
 from ..types import now
 
 if TYPE_CHECKING:
@@ -51,8 +51,10 @@ class UserCreateRequest(HTTPRequestModel):
             city=self.city,
             telephone=self.telephone,
         )
+        user_login = create_login(_id, self.password)
 
         await user.insert(db)
         await user_metadata.insert(db)
+        await user_login.insert(db)
 
         return user, user_metadata
