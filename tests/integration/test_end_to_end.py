@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
+# pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 # pylint: disable=unused-argument
 """
@@ -72,6 +73,20 @@ async def test_endpoint_users_e2e(
     )
     assert response_taken_email.status == 409
 
+    user_1_get_response = await http_client.get(
+        endpoints.Users.path + "/" + response_1_json["id"]
+    )
+    assert user_1_get_response.status == 200
+    user_1_get_json = await user_1_get_response.json()
+    assert user_1_get_json == {
+        "id": response_1_json["id"],
+        "email": "test_endpoint_users_e2e@test.com",
+        "activated": False,
+        "metadata": {
+            "created_at": response_1_json["metadata"]["created_at"],
+        },
+    }
+
     response_2 = await http_client.post(
         endpoints.Users.path,
         json={
@@ -113,3 +128,23 @@ async def test_endpoint_users_e2e(
     assert verify_user_2_meta.created_at == datetime.fromisoformat(
         response_2_json["metadata"]["created_at"]
     )
+
+    user_2_get_response = await http_client.get(
+        endpoints.Users.path + "?email=test_endpoint_users_e2e_e2e_2@test.com"
+    )
+    assert user_2_get_response.status == 200
+    user_2_get_json = await user_2_get_response.json()
+    assert user_2_get_json == {
+        "id": response_2_json["id"],
+        "email": "test_endpoint_users_e2e_e2e_2@test.com",
+        "activated": False,
+        "metadata": {
+            "first_name": "test",
+            "last_name": "test",
+            "created_at": response_2_json["metadata"]["created_at"],
+            "address": "test street",
+            "postal_code": 1000,
+            "city": "test",
+            "telephone": random_phone_number,
+        },
+    }

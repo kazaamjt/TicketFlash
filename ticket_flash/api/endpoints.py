@@ -5,12 +5,14 @@ Need to be loaded by the server.
 
 import json
 from typing import TypeVar
+from uuid import UUID
 
 import asyncpg
 from aiohttp import web
 from pydantic import ValidationError
 
 from ..backend.database import SCHEMA_VERSION, Database
+from ..backend.objects import User, UserMetadata
 from . import PATH_V1, VERSION
 from .request_objects import HTTPRequestModel, UserCreateRequest
 
@@ -130,15 +132,68 @@ class Users(Endpoint):
             status=201,
         )
 
-    # TODO
-    async def get(self, request: web.Request) -> web.Response:
+    async def get_by_email(self, request: web.Request) -> web.Response:
+        """Get the user, using a email as a lookup."""
+        email = request.query.get("email")
+        if not email:
+            raise web.HTTPBadRequest(text="Missing email parameter.")
+
+        user = await User.get_by_email(self.db, email)
+        if user is None:
+            raise web.HTTPNotFound(text="User not found.")
+
+        user_meta = await UserMetadata.get_by_id(self.db, user.id)
+        if user_meta is not None:
+            metadata = user_meta.model_dump(
+                mode="json",
+                exclude={"user_id"},
+                exclude_none=True,
+            )
+        else:
+            metadata = {}
+
+        return web.json_response(
+            {
+                **user.model_dump(mode="json"),
+                "metadata": metadata,
+            },
+        )
+
+    async def get_by_id(self, request: web.Request) -> web.Response:
+        """Gets a user by its UUID"""
+        unformatted_user_id = request.match_info["user_id"]
         try:
-            data = await request.json()
-        except json.JSONDecodeError:
-            return web.json_response({"error": "json_decode_error"}, status=400)
+            user_id = UUID(unformatted_user_id)
+        except ValueError:
+            return web.Response(body="Not a valid UUID", status=400)
+
+        user = await User.get_by_id(self.db, user_id)
+        if user is None:
+            raise web.HTTPNotFound(text="User not found.")
+
+        user_meta = await UserMetadata.get_by_id(self.db, user_id)
+        if user_meta is not None:
+            metadata = user_meta.model_dump(
+                mode="json",
+                exclude={"user_id"},
+                exclude_none=True,
+            )
+        else:
+            metadata = {}
+
+        return web.json_response(
+            {
+                **user.model_dump(mode="json"),
+                "metadata": metadata,
+            },
+        )
 
     def register(self) -> list[web.RouteDef]:
-        return [web.post(self.path, self.create)]
+        return [
+            web.post(self.path, self.create),
+            web.get(self.path, self.get_by_email),
+            web.get(self.path + "/{user_id}", self.get_by_id),
+        ]
 
 
 register_endpoint(Users)
