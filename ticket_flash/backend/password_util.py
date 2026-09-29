@@ -89,7 +89,11 @@ def _load_peppers() -> PepperStruct:
     if PEPPERS_FILE.exists() and not PEPPER_STRUCT.loaded:
         with PEPPERS_FILE.open(encoding="utf-8") as f:
             PEPPER_STRUCT = PepperStruct(**assert_type(json.load(f), dict), loaded=True)
+            return PEPPER_STRUCT
 
+    # This is mostly important for testing
+    # we reset the Pepper if there is no file.
+    PEPPER_STRUCT = PepperStruct(current_index=0, peppers={})
     return PEPPER_STRUCT
 
 

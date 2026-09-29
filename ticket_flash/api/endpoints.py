@@ -17,13 +17,15 @@ from .request_objects import HTTPRequestModel, UserCreateRequest
 T = TypeVar("T", bound=HTTPRequestModel)
 
 
-def validate_data(validation_class: type[T], data: dict) -> T | web.Response:
+async def validate_data(
+    validation_class: type[T], request: web.Request
+) -> T | web.Response:
     """
     Validates data given an HTTPRequestModel Subclass.
     Then returns a validated object OR an error response.
     """
     try:
-        validated_data = validation_class(**data)
+        validated_data = validation_class(**await request.json())
     except ValidationError as e:
         return web.json_response(
             {"error": "validation_error", "details": e.errors()}, status=422
@@ -107,7 +109,7 @@ class Users(Endpoint):
         """
         Creates a user
         """
-        validated_request = validate_data(UserCreateRequest, await request.json())
+        validated_request = await validate_data(UserCreateRequest, request)
         if isinstance(validated_request, web.Response):
             return validated_request
 
@@ -127,6 +129,13 @@ class Users(Endpoint):
             },
             status=201,
         )
+
+    # TODO
+    async def get(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+        except json.JSONDecodeError:
+            return web.json_response({"error": "json_decode_error"}, status=400)
 
     def register(self) -> list[web.RouteDef]:
         return [web.post(self.path, self.create)]

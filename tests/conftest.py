@@ -119,12 +119,12 @@ def random_phone_number() -> str:
     return f"+1212555{random.randint(100, 199)}"
 
 
-@pytest.fixture
-def tmp_config_dir(tmp_path: Path) -> Path:
+@pytest.fixture(scope="function")
+def tmp_config_dir(tmp_path: Path) -> Iterable[Path]:
     config.CONFIG_DIR = tmp_path / "config"
     config.CONFIG_DIR.mkdir(exist_ok=True)
     password_util.PEPPERS_FILE = config.CONFIG_DIR / ".tf_peppers"
-    return config.CONFIG_DIR
+    yield config.CONFIG_DIR
 
 
 @pytest.fixture
