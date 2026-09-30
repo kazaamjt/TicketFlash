@@ -5,7 +5,7 @@ Request Objects describe what an http request should look like.
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..backend.objects import User, UserMetadata, create_login
 from ..types import now
@@ -26,7 +26,7 @@ class UserCreateRequest(HTTPRequestModel):
     """
 
     email: str
-    password: str
+    password: str = Field(min_length=15, max_length=128)
     first_name: str | None = None
     last_name: str | None = None
     address: str | None = None

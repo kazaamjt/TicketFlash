@@ -18,7 +18,7 @@ from .request_objects import HTTPRequestModel, UserCreateRequest
 
 async def validate_data[T: HTTPRequestModel](
     validation_class: type[T], request: web.Request
-) -> T | web.Response:
+) -> T:
     """
     Validates data given an HTTPRequestModel Subclass.
     Then returns a validated object OR an error response.
@@ -26,11 +26,27 @@ async def validate_data[T: HTTPRequestModel](
     try:
         validated_data = validation_class(**await request.json())
     except ValidationError as e:
-        return web.json_response(
-            {"error": "validation_error", "details": e.errors()}, status=422
-        )
-    except json.JSONDecodeError:
-        return web.json_response({"error": "json_decode_error"}, status=400)
+        raise web.HTTPUnprocessableEntity(
+            text=json.dumps(
+                {
+                    "error": "validation_error",
+                    "details": [
+                        {
+                            "loc": error["loc"],
+                            "type": error["type"],
+                            "msg": error["msg"],
+                        }
+                        for error in e.errors()
+                    ],
+                }
+            ),
+            content_type="application/json",
+        ) from e
+    except json.JSONDecodeError as e:
+        raise web.HTTPBadRequest(
+            text=json.dumps({"error": "json_decode_error"}),
+            content_type="application/json",
+        ) from e
 
     return validated_data
 
@@ -109,8 +125,6 @@ class Users(Endpoint):
         Creates a user
         """
         validated_request = await validate_data(UserCreateRequest, request)
-        if isinstance(validated_request, web.Response):
-            return validated_request
 
         try:
             user, metadata = await validated_request.create_user(self.db)

@@ -25,14 +25,18 @@ async def test_endpoint_health(http_client_mock_db: TestClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_endpoint_users(
+async def test_endpoint_users_post(
     http_client_mock_db: TestClient, random_phone_number: str, mock_pepper: None
 ) -> None:
     assert endpoints.Users.path == "/v1/users"
 
+    # Minimal user create
     response_1 = await http_client_mock_db.post(
         endpoints.Users.path,
-        json={"email": "test_endpoint_users@test.com", "password": "password"},
+        json={
+            "email": "test_endpoint_users@test.com",
+            "password": "very_long_password",
+        },
     )
     assert response_1.status == 201
     response_1_json = await response_1.json()
@@ -45,11 +49,12 @@ async def test_endpoint_users(
         },
     }
 
+    # Full user create
     response_2 = await http_client_mock_db.post(
         endpoints.Users.path,
         json={
             "email": "test2@test.com",
-            "password": "password",
+            "password": "very_long_password",
             "first_name": "test",
             "last_name": "test",
             "address": "test street",
@@ -74,4 +79,67 @@ async def test_endpoint_users(
             "city": "test",
             "telephone": random_phone_number,
         },
+    }
+
+
+@pytest.mark.asyncio
+async def test_endpoint_users_post_failure(
+    http_client_mock_db: TestClient, random_phone_number: str, mock_pepper: None
+) -> None:
+    # Failure 1: bad json
+    response_1 = await http_client_mock_db.post(endpoints.Users.path, data="{")
+    assert response_1.status == 400
+
+    # Failure 2: missing password
+    response_2 = await http_client_mock_db.post(
+        endpoints.Users.path,
+        json={"email": "test_endpoint_users@test.com"},
+    )
+    assert response_2.status == 422
+    assert await response_2.json() == {
+        "details": [
+            {
+                "loc": ["password"],
+                "msg": "Field required",
+                "type": "missing",
+            }
+        ],
+        "error": "validation_error",
+    }
+
+    # Failure 3: missing email
+    response_3 = await http_client_mock_db.post(
+        endpoints.Users.path,
+        json={"password": "very_long_password"},
+    )
+    assert response_3.status == 422
+    assert await response_3.json() == {
+        "details": [
+            {
+                "loc": ["email"],
+                "msg": "Field required",
+                "type": "missing",
+            }
+        ],
+        "error": "validation_error",
+    }
+
+    # Failure 4: Password too short
+    response_4 = await http_client_mock_db.post(
+        endpoints.Users.path,
+        json={
+            "email": "test_endpoint_users@test.com",
+            "password": "password",
+        },
+    )
+    assert response_4.status == 422
+    assert await response_4.json() == {
+        "details": [
+            {
+                "loc": ["password"],
+                "msg": "String should have at least 15 characters",
+                "type": "string_too_short",
+            }
+        ],
+        "error": "validation_error",
     }
