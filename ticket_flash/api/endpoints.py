@@ -4,7 +4,6 @@ Need to be loaded by the server.
 """
 
 import json
-from typing import TypeVar
 from uuid import UUID
 
 import asyncpg
@@ -16,10 +15,8 @@ from ..backend.objects import User, UserMetadata
 from . import PATH_V1, VERSION
 from .request_objects import HTTPRequestModel, UserCreateRequest
 
-T = TypeVar("T", bound=HTTPRequestModel)
 
-
-async def validate_data(
+async def validate_data[T: HTTPRequestModel](
     validation_class: type[T], request: web.Request
 ) -> T | web.Response:
     """
@@ -62,15 +59,17 @@ EndpointRegistry = list[type[Endpoint]]
 _endpoints: EndpointRegistry = []
 
 
-def register_endpoint(endpoint: type[Endpoint]) -> None:
+def register_endpoint[T: type[Endpoint]](endpoint: T) -> T:
     """Adds an endpoint to the global endpoint registry."""
     _endpoints.append(endpoint)
+    return endpoint
 
 
 def get_endpoints() -> EndpointRegistry:
     return _endpoints
 
 
+@register_endpoint
 class Health(Endpoint):
     """
     Returns information on how various subsections of the application are doing.
@@ -96,9 +95,7 @@ class Health(Endpoint):
         return [web.get(self.path, self.get)]
 
 
-register_endpoint(Health)
-
-
+@register_endpoint
 class Users(Endpoint):
     """
     Creation of users.
@@ -194,6 +191,3 @@ class Users(Endpoint):
             web.get(self.path, self.get_by_email),
             web.get(self.path + "/{user_id}", self.get_by_id),
         ]
-
-
-register_endpoint(Users)
