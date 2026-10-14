@@ -126,7 +126,7 @@ def rotate_peppers() -> None:
 def _rotate_peppers() -> None:
     config.get_config_dir().mkdir()
     password_util.rotate_pepper()
-    pepper = password_util.PEPPER_STRUCT.get_current_pepper()
+    _, pepper = password_util.PEPPER_STRUCT.get_current_pepper()
     print("Generating new pepper")
     password_util.print_pepper(pepper)
     if config.get_input("Clean up old peppers? [Y/n]", "Y").lower() == "y":

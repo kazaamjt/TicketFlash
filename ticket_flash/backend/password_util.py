@@ -6,6 +6,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import secrets
 
 from argon2 import PasswordHasher
@@ -100,6 +101,8 @@ def _load_peppers() -> PepperStruct:
 def _save_peppers(pepper_struct: PepperStruct) -> None:
     with PEPPERS_FILE.open(mode="w") as f:
         f.write(pepper_struct.model_dump_json(indent=4, exclude={"loaded"}))
+
+    os.chmod(PEPPERS_FILE, 0o600)
 
 
 def rotate_pepper() -> PepperStruct:
